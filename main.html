@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>WANT — Main</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin:16px; }
+  header { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+  .row { display:flex; gap:12px; align-items:center; margin-left:auto; }
+  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th,td { border-bottom:1px solid #eee; padding:6px; font-size:14px; }
+  button { padding:8px 12px; border:1px solid #ddd; background:#f7f7f7; border-radius:8px; cursor:pointer; }
+  .small{ color:#666; font-size:12px; }
+</style>
+</head>
+<body>
+  <header>
+    <h2 style="margin:0;">WANT — Main</h2>
+    <div class="row">
+      <button id="openPorts">Открыть «Порты»</button>
+      <button id="openArp">Открыть «ARP»</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <h3>Routing Table (placeholder)</h3>
+    <div class="small">позже наполним</div>
+  </div>
+
+  <div class="card">
+    <h3>Порты (краткий список)</h3>
+    <table id="portsTbl">
+      <thead><tr><th>Name</th><th>IP</th><th>Mask</th></tr></thead>
+      <tbody><tr><td colspan="3" class="small">Загрузка…</td></tr></tbody>
+    </table>
+  </div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+
+// Диагностика: сразу покажем, жив ли window.api
+console.log('[renderer] window.api =', window.api);
+if (!window.api) {
+  const warn = document.createElement('div');
+  warn.textContent = 'window.api не доступен (preload не подцепился)';
+  warn.style.cssText = 'color:#fff;background:#d33;padding:6px 8px;border-radius:6px;margin:8px 0;';
+  document.body.prepend(warn);
+}
+
+// Кнопки для дочерних окон
+$('#openPorts').onclick = () => window.api?.openWindow('ports');
+$('#openArp').onclick   = () => window.api?.openWindow('arp');
+
+// Хелпер под разный кейс свойств (camel/Pascal)
+function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
+
+async function loadPortsMini(){
+  const tb = $('#portsTbl tbody'); tb.innerHTML = '';
+  if (!window.api) { tb.innerHTML = `<tr><td colspan="3" class="small">Нет window.api</td></tr>`; return; }
+  try {
+    const ifaces = await window.api.getInterfaces();
+    if (!Array.isArray(ifaces) || ifaces.length === 0) {
+      tb.innerHTML = `<tr><td colspan="3" class="small">Пусто</td></tr>`;
+      return;
+    }
+    ifaces.forEach(p=>{
+      const guid = pick(p.guid,p.Guid);
+      const name = pick(p.userName,p.UserName,p.name,p.Name,guid);
+      const ip   = pick(p.ip,p.Ip);
+      const mask = pick(p.mask,p.Mask);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td><td>${ip||''}</td><td>${mask||''}</td>`;
+      tb.appendChild(tr);
+    });
+  } catch (e) {
+    console.error('getInterfaces error:', e);
+    tb.innerHTML = `<tr><td colspan="3" class="small">Ошибка загрузки. См. Console.</td></tr>`;
+  }
+}
+
+loadPortsMini();
+setInterval(loadPortsMini, 5000);
+</script>
+</body>
+</html>

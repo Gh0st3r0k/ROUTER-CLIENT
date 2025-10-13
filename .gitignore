@@ -1,0 +1,76 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Electron build artifacts
+dist/
+out/
+build/
+release/
+*.asar
+*.asar.unpacked/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# OS generated
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+desktop.ini
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Coverage / test
+coverage/
+*.lcov
+
+# Cache
+.cache/
+.eslintcache
+.parcel-cache/
+*.tsbuildinfo
+
+# Packaged apps
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.zip
+*.tar.gz
+*.tgz
+
+# Misc
+*.bak
+*.orig
+*.swp
+*.swo
+*.swn
+*.old
+*.backup

@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>WANT – Ports</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin:16px; }
+  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; }
+  table { width:100%; border-collapse:collapse; }
+  th,td { border-bottom:1px solid #eee; padding:6px; font-size:14px; vertical-align:middle; }
+  input,button{ font:inherit; padding:6px 8px; }
+  .small{ color:#666; font-size:12px; }
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h3>Настройка портов</h3>
+    <table id="portsTbl">
+      <thead>
+        <tr>
+          <th>GUID</th><th>Name</th><th>IP</th><th>Mask</th>
+          <th>Save</th><th>Send ARP</th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="6" class="small">Загрузка…</td></tr></tbody>
+    </table>
+  </div>
+
+<script type="module">
+const $ = s => document.querySelector(s);
+function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
+
+// === ФЛАГИ ===
+let inflight = false;
+let refreshTimer = null;
+
+// считаем, редактирует ли пользователь сейчас поля
+function isTyping() {
+  const el = document.activeElement;
+  if (!el) return false;
+  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+}
+
+async function loadPorts(){
+  // если пользователь печатает — не трогаем DOM
+  if (isTyping()) return;
+
+  if (inflight) return;
+  inflight = true;
+
+  const tb = $('#portsTbl tbody');
+  try{
+    const ifaces = await window.api.getInterfaces();
+    tb.innerHTML='';
+    if(!Array.isArray(ifaces) || ifaces.length===0){
+      tb.innerHTML = `<tr><td colspan="6" class="small">Пусто</td></tr>`;
+      return;
+    }
+
+    ifaces.forEach(p=>{
+      const guid = pick(p.guid,p.Guid) || '';
+      const name = pick(p.userName,p.UserName,p.name,p.Name) || '';
+      const ip   = pick(p.ip,p.Ip) || '';
+      const mask = pick(p.mask,p.Mask) || '';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${guid}</td>
+        <td><input data-k="name" value="${name}" style="width:160px"/></td>
+        <td><input data-k="ip"   value="${ip}"   style="width:140px"/></td>
+        <td><input data-k="mask" value="${mask}" style="width:120px"/></td>
+        <td>
+          <button data-act="save-name" data-id="${guid}">Save name</button>
+          <button data-act="save-addr" data-id="${guid}">Save IP/Mask</button>
+        </td>
+        <td>
+          <input placeholder="Target IP" data-act="target" style="width:150px"/>
+          <input placeholder="(opt) Source IP" data-act="src" style="width:150px"/>
+          <button data-act="arp" data-id="${guid}">Send ARP</button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+
+    // Делегирование кликов по кнопкам (один раз навешиваем)
+    if (!tb._bound) {
+      tb._bound = true;
+      tb.addEventListener('click', async ev=>{
+        const btn = ev.target.closest('button'); if(!btn) return;
+        const row = btn.closest('tr'); const guid = btn.dataset.id;
+        if(!guid) return;
+
+        if(btn.dataset.act === 'save-name'){
+          const name = row.querySelector('input[data-k="name"]').value.trim();
+          try { await window.api.setIfaceDisplayName(guid, { name }); btn.textContent='Saved'; }
+          catch { btn.textContent='Err'; }
+          setTimeout(()=>btn.textContent='Save name', 1200);
+        }
+
+        if(btn.dataset.act === 'save-addr'){
+          const ip   = row.querySelector('input[data-k="ip"]').value.trim();
+          const mask = row.querySelector('input[data-k="mask"]').value.trim();
+          try { await window.api.setIfaceAddress(guid, { ip, mask }); btn.textContent='Saved'; }
+          catch { btn.textContent='Err'; }
+          setTimeout(()=>btn.textContent='Save IP/Mask', 1200);
+        }
+
+        if(btn.dataset.act === 'arp'){
+          const target = row.querySelector('input[data-act="target"]').value.trim();
+          const src    = row.querySelector('input[data-act="src"]').value.trim() || null;
+          try { await window.api.sendArp(guid, target, src); btn.textContent='Sent'; }
+          catch { btn.textContent='Err'; }
+          setTimeout(()=>btn.textContent='Send ARP', 1200);
+        }
+      });
+    }
+  }catch(e){
+    console.error('[ports] getInterfaces error:', e);
+    tb.innerHTML = `<tr><td colspan="6" class="small">Ошибка загрузки. См. Console.</td></tr>`;
+  } finally {
+    inflight = false;
+  }
+}
+
+// автообновление с паузой, если юзер редактирует
+function startAutoRefresh(sec=5){
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(loadPorts, Math.max(1, Number(sec)||5) * 1000);
+}
+
+// Запуск
+await loadPorts();
+startAutoRefresh(5);
+
+// Дополнительно: при уходе/возврате фокуса обновить разок
+window.addEventListener('blur', ()=>{/* ничего */});
+window.addEventListener('focus', ()=>{ loadPorts().catch(()=>{}); });
+</script>
+
+</body>
+</html>
