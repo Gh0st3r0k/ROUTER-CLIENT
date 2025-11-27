@@ -15,15 +15,20 @@
 </head>
 <body>
   <div class="card">
-    <h3>Настройка портов</h3>
+    <h3>Setting ports</h3>
     <table id="portsTbl">
       <thead>
         <tr>
-          <th>GUID</th><th>Name</th><th>IP</th><th>Mask</th>
-          <th>Save</th><th>Send ARP</th>
+          <th>GUID</th>
+          <th>Name</th>
+          <th>IP</th>
+          <th>Mask</th>
+          <th>Save</th>
+          <th>Send ARP</th>
+          <th>Proxy ARP</th>
         </tr>
       </thead>
-      <tbody><tr><td colspan="6" class="small">Загрузка…</td></tr></tbody>
+      <tbody><tr><td colspan="7" class="small">Loading…</td></tr></tbody>
     </table>
   </div>
 
@@ -54,7 +59,7 @@ async function loadPorts(){
     const ifaces = await window.api.getInterfaces();
     tb.innerHTML='';
     if(!Array.isArray(ifaces) || ifaces.length===0){
-      tb.innerHTML = `<tr><td colspan="6" class="small">Пусто</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="7" class="small">Пусто</td></tr>`;
       return;
     }
 
@@ -78,6 +83,11 @@ async function loadPorts(){
           <input placeholder="Target IP" data-act="target" style="width:150px"/>
           <input placeholder="(opt) Source IP" data-act="src" style="width:150px"/>
           <button data-act="arp" data-id="${guid}">Send ARP</button>
+        </td>
+        <td>
+          <button data-act="proxy" data-id="${guid}" data-state="off">
+            Proxy ARP: OFF
+          </button>
         </td>`;
       tb.appendChild(tr);
     });
@@ -112,11 +122,18 @@ async function loadPorts(){
           catch { btn.textContent='Err'; }
           setTimeout(()=>btn.textContent='Send ARP', 1200);
         }
+
+        if(btn.dataset.act === 'proxy'){
+          // пока чисто UI-тоггл, без REST
+          const state = btn.dataset.state === 'on' ? 'off' : 'on';
+          btn.dataset.state = state;
+          btn.textContent = state === 'on' ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
+        }
       });
     }
   }catch(e){
     console.error('[ports] getInterfaces error:', e);
-    tb.innerHTML = `<tr><td colspan="6" class="small">Ошибка загрузки. См. Console.</td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7" class="small">Ошибка загрузки. См. Console.</td></tr>`;
   } finally {
     inflight = false;
   }
@@ -132,8 +149,7 @@ function startAutoRefresh(sec=5){
 await loadPorts();
 startAutoRefresh(5);
 
-// Дополнительно: при уходе/возврате фокуса обновить разок
-window.addEventListener('blur', ()=>{/* ничего */});
+// при возврате фокуса обновляем разок
 window.addEventListener('focus', ()=>{ loadPorts().catch(()=>{}); });
 </script>
 

@@ -7,79 +7,241 @@
   body { font-family: system-ui, sans-serif; margin:16px; }
   header { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
   .row { display:flex; gap:12px; align-items:center; margin-left:auto; }
-  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; }
+  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; margin-bottom:12px; }
   table { width:100%; border-collapse:collapse; margin-top:12px; }
   th,td { border-bottom:1px solid #eee; padding:6px; font-size:14px; }
   button { padding:8px 12px; border:1px solid #ddd; background:#f7f7f7; border-radius:8px; cursor:pointer; }
   .small{ color:#666; font-size:12px; }
+  .form-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .form-row label { font-size:12px; display:flex; flex-direction:column; gap:4px; }
+  input[type="text"], input[type="number"] {
+    padding:4px 6px;
+    border-radius:6px;
+    border:1px solid #ccc;
+    font-size:13px;
+    min-width:120px;
+  }
 </style>
 </head>
 <body>
   <header>
     <h2 style="margin:0;">WANT — Main</h2>
     <div class="row">
-      <button id="openPorts">Открыть «Порты»</button>
-      <button id="openArp">Открыть «ARP»</button>
+      <button id="openPorts">Setting «Ports»</button>
+      <button id="openArp">ARP</button>
     </div>
   </header>
 
+  <!-- ROUTES -->
   <div class="card">
-    <h3>Routing Table (placeholder)</h3>
-    <div class="small">позже наполним</div>
+    <h3>Routing Table</h3>
+
+    <form id="rtAddForm">
+      <div class="form-row">
+        <label>
+          Network
+          <input id="rtNetwork" type="text" placeholder="192.168.10.0">
+        </label>
+        <label>
+          Prefix
+          <input id="rtPrefix" type="number" min="0" max="32" value="24">
+        </label>
+        <label>
+          Next-hop (optional)
+          <input id="rtNextHop" type="text" placeholder="172.16.0.1">
+        </label>
+        <label>
+          Out interface (optional, GUID)
+          <input id="rtOutIface" type="text" placeholder="GUID или пусто">
+        </label>
+        <label>
+          &nbsp;
+          <button type="submit">Add route</button>
+        </label>
+      </div>
+    </form>
+
+    <button id="btnAddConnected">Add all connected networks</button>
+
+    <table id="routesTbl">
+      <thead>
+        <tr>
+          <th>Destination</th>
+          <th>Next hop</th>
+          <th>Out interface</th>
+          <th>AD</th>
+          <th>Type</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" class="small">Loading...</td></tr>
+      </tbody>
+    </table>
   </div>
 
+  <!-- PORTS MINI -->
   <div class="card">
-    <h3>Порты (краткий список)</h3>
+    <h3>Ports</h3>
     <table id="portsTbl">
       <thead><tr><th>Name</th><th>IP</th><th>Mask</th></tr></thead>
-      <tbody><tr><td colspan="3" class="small">Загрузка…</td></tr></tbody>
+      <tbody><tr><td colspan="3" class="small">Download...</td></tr></tbody>
     </table>
   </div>
 
 <script type="module">
 const $ = s => document.querySelector(s);
 
-// Диагностика: сразу покажем, жив ли window.api
-console.log('[renderer] window.api =', window.api);
-if (!window.api) {
-  const warn = document.createElement('div');
-  warn.textContent = 'window.api не доступен (preload не подцепился)';
-  warn.style.cssText = 'color:#fff;background:#d33;padding:6px 8px;border-radius:6px;margin:8px 0;';
-  document.body.prepend(warn);
-}
-
-// Кнопки для дочерних окон
+// окна
 $('#openPorts').onclick = () => window.api?.openWindow('ports');
 $('#openArp').onclick   = () => window.api?.openWindow('arp');
 
-// Хелпер под разный кейс свойств (camel/Pascal)
 function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
 
-async function loadPortsMini(){
-  const tb = $('#portsTbl tbody'); tb.innerHTML = '';
-  if (!window.api) { tb.innerHTML = `<tr><td colspan="3" class="small">Нет window.api</td></tr>`; return; }
+// ====== ROUTING ======
+
+async function loadRoutes() {
+  const tb = $('#routesTbl tbody');
+  tb.innerHTML = '';
   try {
-    const ifaces = await window.api.getInterfaces();
-    if (!Array.isArray(ifaces) || ifaces.length === 0) {
-      tb.innerHTML = `<tr><td colspan="3" class="small">Пусто</td></tr>`;
+    const routes = await window.api.getRoutes();
+    if (!routes.length) {
+      tb.innerHTML = `<tr><td colspan="6" class="small">Routing table empty</td></tr>`;
       return;
     }
-    ifaces.forEach(p=>{
-      const guid = pick(p.guid,p.Guid);
-      const name = pick(p.userName,p.UserName,p.name,p.Name,guid);
-      const ip   = pick(p.ip,p.Ip);
-      const mask = pick(p.mask,p.Mask);
+
+    for (const r of routes) {
+      const dest = pick(r.destination, r.Destination);
+      const nh   = pick(r.nextHop, r.NextHop, '');
+      const oif  = pick(r.outInterfaceName, r.OutInterfaceName, '');
+      const ad   = pick(r.administrativeDistance, r.AdministrativeDistance, '');
+      const type = pick(r.type, r.Type, '');
+
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${name}</td><td>${ip||''}</td><td>${mask||''}</td>`;
+      tr.innerHTML = `
+        <td>${dest}</td>
+        <td>${nh}</td>
+        <td>${oif}</td>
+        <td>${ad}</td>
+        <td>${type}</td>
+        <td>
+          <button data-act="del-route" data-dest="${dest}" data-oif="${oif}">
+            Delete
+          </button>
+        </td>`;
       tb.appendChild(tr);
-    });
-  } catch (e) {
-    console.error('getInterfaces error:', e);
-    tb.innerHTML = `<tr><td colspan="3" class="small">Ошибка загрузки. См. Console.</td></tr>`;
+    }
+  } catch {
+    tb.innerHTML = `<tr><td colspan="6" class="small">Error loading routes</td></tr>`;
   }
 }
 
+document.getElementById('rtAddForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const network = $('#rtNetwork').value.trim();
+  const prefix  = parseInt($('#rtPrefix').value, 10);
+  const nextHop = $('#rtNextHop').value.trim();
+  const outIf   = $('#rtOutIface').value.trim();
+
+  if (!network || isNaN(prefix)) {
+    alert('Network + prefix required');
+    return;
+  }
+
+  try {
+    // ===== CASE 1: ТОЛЬКО интерфейс =====
+    if (!nextHop && outIf) {
+      await window.api.addRouteDirect({
+        network,
+        prefixLength: prefix,
+        outInterfaceName: outIf,
+        administrativeDistance: 0
+      });
+    }
+    // ===== CASE 2: ТОЛЬКО next-hop =====
+    else if (nextHop && !outIf) {
+      await window.api.addRouteVia({
+        network,
+        prefixLength: prefix,
+        nextHop,
+        outInterfaceName: null,
+        administrativeDistance: 1
+      });
+    }
+    // ===== CASE 3: next-hop + интерфейс =====
+    else if (nextHop && outIf) {
+      await window.api.addRouteVia({
+        network,
+        prefixLength: prefix,
+        nextHop,
+        outInterfaceName: outIf,
+        administrativeDistance: 1
+      });
+    }
+    else {
+      alert("Введите хотя бы next-hop или интерфейс");
+      return;
+    }
+
+    await loadRoutes();
+  } catch (err) {
+    console.error(err);
+    alert('Error adding route');
+  }
+});
+
+// delete
+document.querySelector('#routesTbl tbody').onclick = async e => {
+  const btn = e.target.closest('button[data-act="del-route"]');
+  if (!btn) return;
+  const dest = btn.dataset.dest;
+  const oif  = btn.dataset.oif || '';
+
+  // split dest "/"
+  const [network, prefixStr] = dest.split('/');
+  const prefix = parseInt(prefixStr, 10);
+
+  if (!confirm(`Delete route ${dest}?`)) return;
+
+  await window.api.deleteRoute({
+    network, prefixLength: prefix, outInterfaceName: oif
+  });
+  loadRoutes();
+};
+
+// Add connected
+$('#btnAddConnected').onclick = async () => {
+  try {
+    await window.api.addConnected();
+    loadRoutes();
+  } catch {
+    alert('Error adding connected routes');
+  }
+};
+
+// ===== PORTS =====
+async function loadPortsMini() {
+  const tb = $('#portsTbl tbody');
+  try {
+    const ifs = await window.api.getInterfaces();
+    tb.innerHTML = '';
+    for (const p of ifs) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${p.userName||p.UserName||p.name||p.Name}</td>
+                      <td>${p.ip||p.Ip||''}</td>
+                      <td>${p.mask||p.Mask||''}</td>`;
+      tb.appendChild(tr);
+    }
+  } catch {
+    tb.innerHTML = `<tr><td colspan="3" class="small">Error</td></tr>`;
+  }
+}
+
+// start
+loadRoutes();
 loadPortsMini();
+setInterval(loadRoutes, 5000);
 setInterval(loadPortsMini, 5000);
 </script>
 </body>
