@@ -33,7 +33,25 @@ const api = {
   deleteRoute: ({network,prefixLength,outInterfaceName})=>
     jdel(`${BASE}/api/routes`,{network,prefixLength,outInterfaceName}),
 
-  addConnected: ()=> jpost(`${BASE}/api/routes/add-connected-from-interfaces`)
+  addConnected: ()=> jpost(`${BASE}/api/routes/add-connected-from-interfaces`),
+
+  // 🔥 PROXY ARP
+  getProxyArpStates: () => jget(`${BASE}/api/proxy-arp`),
+  setProxyArp: (interfaceId, enabled) =>
+    jpost(`${BASE}/api/proxy-arp/${interfaceId}`, { enabled }),
+
+  // 🔥 RIP
+  getRipInterfaces: () => jget(`${BASE}/api/rip/interfaces`),
+  ripEnable: (interfaceId) =>
+    jpost(`${BASE}/api/rip/enable`, { interfaceId }),
+  ripDisable: (interfaceId) =>
+    jpost(`${BASE}/api/rip/disable`, { interfaceId }),
+
+
+  // RIP TIMER API
+  getRipTimers: () => jget(`${BASE}/api/rip/timers`),
+  setRipTimers: (dto) => jput(`${BASE}/api/rip/timers`, dto),
+
 };
 
 contextBridge.exposeInMainWorld('api',api);

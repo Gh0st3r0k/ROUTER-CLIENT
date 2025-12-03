@@ -27,6 +27,7 @@
   <header>
     <h2 style="margin:0;">WANT — Main</h2>
     <div class="row">
+      <button id="openRip">RIP</button>
       <button id="openPorts">Setting «Ports»</button>
       <button id="openArp">ARP</button>
     </div>
@@ -93,6 +94,7 @@
 const $ = s => document.querySelector(s);
 
 // окна
+$('#openRip').onclick = () => window.api?.openWindow('rip');
 $('#openPorts').onclick = () => window.api?.openWindow('ports');
 $('#openArp').onclick   = () => window.api?.openWindow('arp');
 

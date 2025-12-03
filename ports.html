@@ -26,9 +26,10 @@
           <th>Save</th>
           <th>Send ARP</th>
           <th>Proxy ARP</th>
+          <th>RIP</th>
         </tr>
       </thead>
-      <tbody><tr><td colspan="7" class="small">Loading…</td></tr></tbody>
+      <tbody><tr><td colspan="8" class="small">Loading…</td></tr></tbody>
     </table>
   </div>
 
@@ -36,42 +37,74 @@
 const $ = s => document.querySelector(s);
 function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
 
-// === ФЛАГИ ===
 let inflight = false;
 let refreshTimer = null;
 
-// считаем, редактирует ли пользователь сейчас поля
 function isTyping() {
   const el = document.activeElement;
   if (!el) return false;
   return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
 }
 
-async function loadPorts(){
-  // если пользователь печатает — не трогаем DOM
-  if (isTyping()) return;
+function toKey(guid){
+  return (guid ?? '').trim().toUpperCase();
+}
 
+async function loadPorts(){
+  if (isTyping()) return;
   if (inflight) return;
   inflight = true;
 
   const tb = $('#portsTbl tbody');
   try{
-    const ifaces = await window.api.getInterfaces();
+    // ⏳ грузим параллельно интерфейсы, ProxyARP и RIP
+    const [ifaces, proxyStates, ripStates] = await Promise.all([
+      window.api.getInterfaces(),
+      window.api.getProxyArpStates().catch(()=>[]),
+      window.api.getRipInterfaces().catch(()=>[]),
+    ]);
+
     tb.innerHTML='';
+
     if(!Array.isArray(ifaces) || ifaces.length===0){
-      tb.innerHTML = `<tr><td colspan="7" class="small">Пусто</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="8" class="small">Пусто</td></tr>`;
       return;
     }
 
+    // делаем мапы по GUID
+    const proxyMap = new Map();
+    if (Array.isArray(proxyStates)) {
+      for (const s of proxyStates) {
+        const id = toKey(s.interfaceId ?? s.InterfaceId);
+        if (!id) continue;
+        proxyMap.set(id, !!s.enabled);
+      }
+    }
+
+    const ripMap = new Map();
+    if (Array.isArray(ripStates)) {
+      for (const s of ripStates) {
+        const id = toKey(s.interfaceId ?? s.InterfaceId);
+        if (!id) continue;
+        ripMap.set(id, !!s.enabled);
+      }
+    }
+
     ifaces.forEach(p=>{
-      const guid = pick(p.guid,p.Guid) || '';
+      const guidRaw = pick(p.guid,p.Guid) || '';
+      const guid = toKey(guidRaw);
       const name = pick(p.userName,p.UserName,p.name,p.Name) || '';
       const ip   = pick(p.ip,p.Ip) || '';
       const mask = pick(p.mask,p.Mask) || '';
 
+      // Proxy ARP: по умолчанию ВКЛЮЧЕН, если про интерфейс нет записи
+      const proxyEnabled = proxyMap.has(guid) ? proxyMap.get(guid) : true;
+      // RIP: по умолчанию ВЫКЛЮЧЕН, если записи нет
+      const ripEnabled   = ripMap.has(guid) ? ripMap.get(guid) : false;
+
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${guid}</td>
+        <td>${guidRaw}</td>
         <td><input data-k="name" value="${name}" style="width:160px"/></td>
         <td><input data-k="ip"   value="${ip}"   style="width:140px"/></td>
         <td><input data-k="mask" value="${mask}" style="width:120px"/></td>
@@ -85,73 +118,130 @@ async function loadPorts(){
           <button data-act="arp" data-id="${guid}">Send ARP</button>
         </td>
         <td>
-          <button data-act="proxy" data-id="${guid}" data-state="off">
-            Proxy ARP: OFF
+          <button data-act="proxy" data-id="${guid}" data-state="${proxyEnabled ? 'on' : 'off'}">
+            Proxy ARP: ${proxyEnabled ? 'ON' : 'OFF'}
+          </button>
+        </td>
+        <td>
+          <button data-act="rip" data-id="${guid}" data-state="${ripEnabled ? 'on' : 'off'}">
+            RIP: ${ripEnabled ? 'ON' : 'OFF'}
           </button>
         </td>`;
       tb.appendChild(tr);
     });
 
-    // Делегирование кликов по кнопкам (один раз навешиваем)
+    // Делегирование кликов (однажды)
     if (!tb._bound) {
       tb._bound = true;
       tb.addEventListener('click', async ev=>{
         const btn = ev.target.closest('button'); if(!btn) return;
-        const row = btn.closest('tr'); const guid = btn.dataset.id;
+        const row = btn.closest('tr'); 
+        const guid = btn.dataset.id;
         if(!guid) return;
 
+        // SAVE NAME
         if(btn.dataset.act === 'save-name'){
           const name = row.querySelector('input[data-k="name"]').value.trim();
-          try { await window.api.setIfaceDisplayName(guid, { name }); btn.textContent='Saved'; }
-          catch { btn.textContent='Err'; }
+          try { 
+            await window.api.setIfaceDisplayName(guid, { name }); 
+            btn.textContent='Saved'; 
+          }
+          catch { 
+            btn.textContent='Err'; 
+          }
           setTimeout(()=>btn.textContent='Save name', 1200);
         }
 
+        // SAVE IP/MASK
         if(btn.dataset.act === 'save-addr'){
           const ip   = row.querySelector('input[data-k="ip"]').value.trim();
           const mask = row.querySelector('input[data-k="mask"]').value.trim();
-          try { await window.api.setIfaceAddress(guid, { ip, mask }); btn.textContent='Saved'; }
-          catch { btn.textContent='Err'; }
+          try { 
+            await window.api.setIfaceAddress(guid, { ip, mask }); 
+            btn.textContent='Saved'; 
+          }
+          catch { 
+            btn.textContent='Err'; 
+          }
           setTimeout(()=>btn.textContent='Save IP/Mask', 1200);
         }
 
+        // SEND ARP
         if(btn.dataset.act === 'arp'){
           const target = row.querySelector('input[data-act="target"]').value.trim();
           const src    = row.querySelector('input[data-act="src"]').value.trim() || null;
-          try { await window.api.sendArp(guid, target, src); btn.textContent='Sent'; }
-          catch { btn.textContent='Err'; }
+          try { 
+            await window.api.sendArp(guid, target, src); 
+            btn.textContent='Sent'; 
+          }
+          catch { 
+            btn.textContent='Err'; 
+          }
           setTimeout(()=>btn.textContent='Send ARP', 1200);
         }
 
+        // 🔥 PROXY ARP TOGGLE
         if(btn.dataset.act === 'proxy'){
-          // пока чисто UI-тоггл, без REST
-          const state = btn.dataset.state === 'on' ? 'off' : 'on';
-          btn.dataset.state = state;
-          btn.textContent = state === 'on' ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
+          const cur = btn.dataset.state === 'on';
+          const next = !cur;
+          btn.disabled = true;
+          try {
+            await window.api.setProxyArp(guid, next);
+            btn.dataset.state = next ? 'on' : 'off';
+            btn.textContent = next ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
+          } catch {
+            // можно мигнуть ошибку
+            btn.textContent = 'Err';
+            setTimeout(()=>{
+              btn.textContent = cur ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
+            }, 1200);
+          } finally {
+            btn.disabled = false;
+          }
+        }
+
+        // 🔥 RIP TOGGLE
+        if(btn.dataset.act === 'rip'){
+          const cur = btn.dataset.state === 'on';
+          const next = !cur;
+          btn.disabled = true;
+          try {
+            if (next) {
+              await window.api.ripEnable(guid);
+            } else {
+              await window.api.ripDisable(guid);
+            }
+            btn.dataset.state = next ? 'on' : 'off';
+            btn.textContent = next ? 'RIP: ON' : 'RIP: OFF';
+          } catch {
+            btn.textContent = 'Err';
+            setTimeout(()=>{
+              btn.textContent = cur ? 'RIP: ON' : 'RIP: OFF';
+            }, 1200);
+          } finally {
+            btn.disabled = false;
+          }
         }
       });
     }
   }catch(e){
-    console.error('[ports] getInterfaces error:', e);
-    tb.innerHTML = `<tr><td colspan="7" class="small">Ошибка загрузки. См. Console.</td></tr>`;
+    console.error('[ports] getInterfaces/proxy/rip error:', e);
+    tb.innerHTML = `<tr><td colspan="8" class="small">Ошибка загрузки. См. Console.</td></tr>`;
   } finally {
     inflight = false;
   }
 }
 
-// автообновление с паузой, если юзер редактирует
 function startAutoRefresh(sec=5){
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(loadPorts, Math.max(1, Number(sec)||5) * 1000);
 }
 
-// Запуск
 await loadPorts();
 startAutoRefresh(5);
-
-// при возврате фокуса обновляем разок
 window.addEventListener('focus', ()=>{ loadPorts().catch(()=>{}); });
 </script>
+
 
 </body>
 </html>
