@@ -52,6 +52,33 @@ const api = {
   getRipTimers: () => jget(`${BASE}/api/rip/timers`),
   setRipTimers: (dto) => jput(`${BASE}/api/rip/timers`, dto),
 
+
+    // 🔥 DHCP – глобальные настройки
+  getDhcpSettings: () => jget(`${BASE}/api/dhcp/settings`),
+  setDhcpSettings: (dynamicLeaseSeconds, cleanupIntervalSeconds) =>
+    jput(`${BASE}/api/dhcp/settings`, {
+      dynamicLeaseSeconds,
+      cleanupIntervalSeconds,
+    }),
+
+  // 🔥 DHCP – пулы
+  getDhcpPools: () => jget(`${BASE}/api/dhcp/pools`),
+  getDhcpPool: (id) => jget(`${BASE}/api/dhcp/pools/${id}`),
+  createDhcpPool: (pool) => jpost(`${BASE}/api/dhcp/pools`, pool),
+  updateDhcpPool: (id, pool) => jput(`${BASE}/api/dhcp/pools/${id}`, pool),
+  deleteDhcpPool: (id) => jdel(`${BASE}/api/dhcp/pools/${id}`),
+
+  // 🔥 DHCP – manual reservations
+  addDhcpReservation: (poolId, { mac, ip }) =>
+    jpost(`${BASE}/api/dhcp/pools/${poolId}/reservations`, { mac, ip }),
+  deleteDhcpReservation: (poolId, mac) =>
+    jdel(`${BASE}/api/dhcp/pools/${poolId}/reservations/${mac}`),
+
+  // 🔥 DHCP – leases
+  getDhcpLeases: () => jget(`${BASE}/api/dhcp/leases`),
+  getDhcpPoolLeases: (poolId) =>
+    jget(`${BASE}/api/dhcp/pools/${poolId}/leases`),
+
 };
 
 contextBridge.exposeInMainWorld('api',api);

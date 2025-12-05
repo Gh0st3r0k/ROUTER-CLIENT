@@ -30,6 +30,7 @@
       <button id="openRip">RIP</button>
       <button id="openPorts">Setting «Ports»</button>
       <button id="openArp">ARP</button>
+      <button id="openDhcp">DHCP</button>
     </div>
   </header>
 
@@ -97,6 +98,7 @@ const $ = s => document.querySelector(s);
 $('#openRip').onclick = () => window.api?.openWindow('rip');
 $('#openPorts').onclick = () => window.api?.openWindow('ports');
 $('#openArp').onclick   = () => window.api?.openWindow('arp');
+$('#openDhcp').onclick  = () => window.api?.openWindow('dhcp');
 
 function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
 
