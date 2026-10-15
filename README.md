@@ -1,20 +1,30 @@
-# WANT · Router Desktop
+<h1 align="center">Router · Desktop</h1>
 
-An **Electron** desktop interface for the [WANT Router Server](https://github.com/Gh0st3r0k/Router-Server). Manage the educational router through local REST calls while keeping renderer pages isolated from Node.js APIs.
+<p align="center"><strong>A desktop view of your IPv4 routing lab.</strong></p>
 
-The client is a management interface. Packet capture, forwarding, ARP, RIP, and DHCP run in the server, not in Electron.
+<p align="center">
+  Inspect interfaces, manage routes, and configure the Router server from an Electron dashboard.
+</p>
 
-## Contents
+<p align="center">
+  <a href="#installation-and-startup">Getting started</a> ·
+  <a href="#overview">Using the app</a> ·
+  <a href="docs/development.md">Development</a> ·
+  <a href="https://github.com/Gh0st3r0k/Router-Server">Backend server</a>
+</p>
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Requirements](#requirements)
-- [Installation and startup](#installation-and-startup)
-- [Testing](#testing)
-- [Project layout](#project-layout)
-- [Limitations and troubleshooting](#limitations-and-troubleshooting)
+<p align="center">
+  <img src="https://img.shields.io/badge/Electron-38-47848F?logo=electron&amp;logoColor=white" alt="Electron 38">
+  <img src="https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&amp;logoColor=black" alt="JavaScript · vanilla">
+  <img src="https://img.shields.io/badge/HTML-5-E34F26?logo=html5&amp;logoColor=white" alt="HTML 5">
+  <img src="https://img.shields.io/badge/CSS-plain-663399?logo=css&amp;logoColor=white" alt="Plain CSS">
+</p>
 
-## Features
+---
+
+## Overview
+
+This is the desktop companion to [WANT Router Server](https://github.com/Gh0st3r0k/Router-Server). It uses **Electron** with plain HTML, CSS, and JavaScript; there is no frontend build step. Renderer pages access the server through an isolated preload API.
 
 | Window | Implemented controls |
 | --- | --- |
@@ -25,6 +35,8 @@ The client is a management interface. Packet capture, forwarding, ARP, RIP, and 
 | DHCP | Edit global timing, create/update/delete pools, manage manual MAC reservations, inspect leases and filter them by pool. |
 
 Main, Ports, RIP, and DHCP views refresh relevant tables periodically; the ARP view has a configurable refresh interval. Protocol state is stored by the server in memory and is lost on server restart.
+
+The client is a management interface. Packet capture, forwarding, ARP, RIP, and DHCP run in the server.
 
 ## Architecture
 
