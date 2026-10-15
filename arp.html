@@ -1,154 +1,212 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8"/>
-<title>WANT – ARP</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin:16px; }
-  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; }
-  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  table { width:100%; border-collapse:collapse; }
-  th,td { border-bottom:1px solid #eee; padding:6px; font-size:14px; }
-  input,button{ font:inherit; padding:6px 8px; }
-  .small{ color:#666; font-size:12px; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <div class="row">
-      <h3 style="margin:0;">ARP Cache</h3>
-      <button id="dupBtn" style="margin-left:auto;">???</button>
-      <button id="flushBtn">Flush</button>
+  <head>
+    <meta charset="utf-8" />
+    <title>WANT – ARP</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 16px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        background: white;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #eee;
+        padding: 6px;
+        font-size: 14px;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 6px 8px;
+      }
+      .small {
+        color: #666;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="row">
+        <h3 style="margin: 0">ARP Cache</h3>
+        <button id="dupBtn" style="margin-left: auto">???</button>
+        <button id="flushBtn">Flush</button>
+      </div>
+
+      <table id="arpTbl">
+        <thead>
+          <tr>
+            <th>IP</th>
+            <th>MAC</th>
+            <th>NIC</th>
+            <th>Age</th>
+            <th>Expires in</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5" class="small">Loading...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="row" style="margin-top: 12px">
+        <label
+          >Autoupdate (sec):
+          <input id="arpTimer" type="number" min="1" value="5"
+        /></label>
+        <button id="applyTimer">Apply</button>
+        <span id="note" class="small"></span>
+      </div>
     </div>
 
-    <table id="arpTbl">
-      <thead>
-        <tr><th>IP</th><th>MAC</th><th>NIC</th><th>Age</th><th>Expires in</th></tr>
-      </thead>
-      <tbody><tr><td colspan="5" class="small">Loading...</td></tr></tbody>
-    </table>
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
 
-    <div class="row" style="margin-top:12px;">
-      <label>Autoupdate (sec): <input id="arpTimer" type="number" min="1" value="5"/></label>
-      <button id="applyTimer">Apply</button>
-      <span id="note" class="small"></span>
-    </div>
-  </div>
+      let lastArp = [];
+      let refreshSec = 5;
+      let timer;
 
-<script type="module">
-const $ = s => document.querySelector(s);
+      // Avoid overlapping requests and preserve in-progress edits.
+      let inflight = false;
+      function isTyping() {
+        const el = document.activeElement;
+        return (
+          !!el &&
+          (el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.isContentEditable)
+        );
+      }
 
-let lastArp = [];
-let refreshSec = 5;
-let timer;
+      // ARP cache refresh.
+      async function loadArp(displayOnly = false) {
+        // Do not replace input while the user is editing it.
+        if (!displayOnly && isTyping()) return;
+        // Allow only one refresh request at a time.
+        if (!displayOnly && inflight) return;
+        if (!displayOnly) inflight = true;
 
-// === ДОБАВЛЕНО: защита от стирания ввода/параллельных запросов ===
-let inflight = false;
-function isTyping(){
-  const el = document.activeElement;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-}
+        const tb = $("#arpTbl tbody");
+        tb.innerHTML = "";
 
-// ── загрузка ARP кэша ─────────────────────────────────────
-async function loadArp(displayOnly = false){
-  // если пользователь печатает (например, меняет таймер) — не перерисовываем
-  if (!displayOnly && isTyping()) return;
-  // не запускаем второй запрос, пока не закончился первый
-  if (!displayOnly && inflight) return;
-  if (!displayOnly) inflight = true;
+        try {
+          const data = displayOnly
+            ? lastArp.concat(lastArp)
+            : await window.api.getArpCache().catch(() => []);
 
-  const tb = $('#arpTbl tbody');
-  tb.innerHTML='';
+          if (!displayOnly) lastArp = data;
 
-  try {
-    const data = displayOnly
-      ? lastArp.concat(lastArp)
-      : await window.api.getArpCache().catch(()=>[]);
+          if (!data.length) {
+            tb.innerHTML = `<tr><td colspan="5" class="small">No entries</td></tr>`;
+            return;
+          }
 
-    if(!displayOnly) lastArp = data;
+          // Accept both legacy PascalCase and current camelCase responses.
+          const pick = (...xs) => xs.find((v) => v !== undefined && v !== null);
+          const fmtMac = (m) =>
+            typeof m === "string" && m.length === 12
+              ? m
+                  .match(/.{1,2}/g)
+                  .join(":")
+                  .toUpperCase()
+              : (m ?? "");
 
-    if(!data.length){
-      tb.innerHTML = `<tr><td colspan="5" class="small">Пусто</td></tr>`;
-      return;
-    }
+          data.forEach((a) => {
+            const ip = pick(a.ip, a.Ip);
+            const mac = pick(a.mac, a.Mac);
+            const nic = pick(a.nic, a.Nic);
 
-    // хелперы
-    const pick = (...xs) => xs.find(v => v !== undefined && v !== null);
-    const fmtMac = m => typeof m === 'string' && m.length === 12
-    ? m.match(/.{1,2}/g).join(':').toUpperCase()
-    : (m ?? '');
+            const ageS = pick(a.ageSeconds, a.AgeSeconds);
+            const expS = pick(a.expiresInSeconds, a.ExpiresInSeconds); // null means no expiration.
 
-    data.forEach(a => {
-    const ip  = pick(a.ip,  a.Ip);
-    const mac = pick(a.mac, a.Mac);
-    const nic = pick(a.nic, a.Nic);
+            const age =
+              typeof ageS === "number"
+                ? `${Math.max(0, Math.round(ageS))}s`
+                : "";
+            const exp =
+              expS == null
+                ? "∞"
+                : typeof expS === "number"
+                  ? `${Math.max(0, Math.round(expS))}s`
+                  : "";
 
-    const ageS = pick(a.ageSeconds, a.AgeSeconds);
-    const expS = pick(a.expiresInSeconds, a.ExpiresInSeconds); // может быть null (∞)
-
-    const age = (typeof ageS === 'number') ? `${Math.max(0, Math.round(ageS))}s` : '';
-    const exp = (expS == null) ? '∞'
-            : (typeof expS === 'number') ? `${Math.max(0, Math.round(expS))}s` : '';
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>${ip ?? ''}</td>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+        <td>${ip ?? ""}</td>
         <td>${fmtMac(mac)}</td>
-        <td>${nic ?? ''}</td>
+        <td>${nic ?? ""}</td>
         <td>${age}</td>
         <td>${exp}</td>`;
-    tb.appendChild(tr);
-    });
+            tb.appendChild(tr);
+          });
+        } finally {
+          if (!displayOnly) inflight = false;
+        }
+      }
 
-  } finally {
-    if (!displayOnly) inflight = false;
-  }
-}
+      // Client refresh interval.
+      function setRefreshSec(s) {
+        refreshSec = Math.max(1, Number(s) || 5);
+        clearInterval(timer);
+        timer = setInterval(() => loadArp(false), refreshSec * 1000);
+      }
 
-// ── таймер автообновления (клиентский) ────────────────────
-function setRefreshSec(s){
-  refreshSec = Math.max(1, Number(s) || 5);
-  clearInterval(timer);
-  timer = setInterval(()=>loadArp(false), refreshSec*1000);
-}
+      // UI event handlers.
+      $("#dupBtn").onclick = () => loadArp(true);
 
-// ── события UI ────────────────────────────────────────────
-$('#dupBtn').onclick = () => loadArp(true);
+      $("#applyTimer").onclick = async () => {
+        const val = Number($("#arpTimer").value) || 5;
+        setRefreshSec(val);
+        $("#note").textContent = `Applied: ${val}s (client)`;
+        try {
+          const res = await window.api.setArpTtl(val); // PUT /api/arp/cache/ttl
+          if (res && typeof res.ttlSeconds === "number") {
+            $("#note").textContent += `, server TTL=${res.ttlSeconds}s`;
+          }
+        } catch {}
+        setTimeout(() => ($("#note").textContent = ""), 1500);
+      };
 
-$('#applyTimer').onclick = async () => {
-  const val = Number($('#arpTimer').value) || 5;
-  setRefreshSec(val);
-  $('#note').textContent = `Применено: ${val}s (клиент)`;
-  try {
-    const res = await window.api.setArpTtl(val); // PUT /api/arp/cache/ttl
-    if (res && typeof res.ttlSeconds === 'number') {
-      $('#note').textContent += `, сервер TTL=${res.ttlSeconds}s`;
-    }
-  } catch {}
-  setTimeout(()=>$('#note').textContent='',1500);
-};
+      $("#flushBtn").onclick = async () => {
+        try {
+          await window.api.flushArpCache();
+          await loadArp(false);
+        } catch {}
+      };
 
-$('#flushBtn').onclick = async () => {
-  try { await window.api.flushArpCache(); await loadArp(false); }
-  catch {}
-};
+      // Initial load.
+      (async () => {
+        try {
+          const t = await window.api.getArpTtl(); // GET /api/arp/cache/ttl
+          if (t && typeof t.ttlSeconds === "number") {
+            $("#arpTimer").value = t.ttlSeconds;
+            refreshSec = t.ttlSeconds; // Initialize the refresh interval from the server TTL.
+          }
+        } catch {}
 
-// ── инициализация ─────────────────────────────────────────
-(async ()=>{
-  try {
-    const t = await window.api.getArpTtl(); // GET /api/arp/cache/ttl
-    if (t && typeof t.ttlSeconds === 'number') {
-      $('#arpTimer').value = t.ttlSeconds;
-      refreshSec = t.ttlSeconds; // синхронизируем клиентский интервал с серверным
-    }
-  } catch {}
+        setRefreshSec(refreshSec);
+        loadArp(false);
 
-  setRefreshSec(refreshSec);
-  loadArp(false);
-
-  // Подстраховка: если окно вернулось в фокус — обновим один раз
-  window.addEventListener('focus', () => loadArp(false));
-})();
-</script>
-</body>
+        // Refresh once when the window regains focus.
+        window.addEventListener("focus", () => loadArp(false));
+      })();
+    </script>
+  </body>
 </html>

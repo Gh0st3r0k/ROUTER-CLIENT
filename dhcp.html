@@ -1,601 +1,707 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8"/>
-<title>WANT — DHCP</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin:16px; background:#f5f5f5; }
-  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  h2 { margin:0; }
-  .cards { display:flex; flex-wrap:wrap; gap:12px; }
-  .card {
-    flex:1 1 380px;
-    border:1px solid #ddd;
-    border-radius:10px;
-    padding:12px;
-    background:white;
-  }
-  h3 { margin:0 0 8px 0; }
-  table { width:100%; border-collapse:collapse; margin-top:8px; font-size:13px; }
-  th,td { border-bottom:1px solid #eee; padding:4px 6px; }
-  th { text-align:left; background:#fafafa; }
-  .small{ color:#666; font-size:12px; }
-  .form-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
-  .form-row label { font-size:12px; display:flex; flex-direction:column; gap:2px; }
-  input[type="text"], input[type="number"] {
-    padding:4px 6px;
-    border-radius:6px;
-    border:1px solid #ccc;
-    font-size:13px;
-    min-width:80px;
-  }
-  select {
-    padding:4px 6px;
-    border-radius:6px;
-    border:1px solid #ccc;
-    font-size:13px;
-  }
-  button {
-    padding:6px 10px;
-    border-radius:8px;
-    border:1px solid #ddd;
-    background:#f7f7f7;
-    cursor:pointer;
-    font-size:13px;
-  }
-  button.danger { border-color:#f88; background:#ffecec; }
-  .pill {
-    display:inline-block;
-    padding:2px 6px;
-    border-radius:999px;
-    font-size:11px;
-    border:1px solid #ddd;
-    margin-right:4px;
-  }
-</style>
-</head>
-<body>
-<header>
-  <h2>DHCP Management</h2>
-  <span class="small">WANT router DHCP server</span>
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <title>WANT — DHCP</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 16px;
+        background: #f5f5f5;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      h2 {
+        margin: 0;
+      }
+      .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .card {
+        flex: 1 1 380px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        background: white;
+      }
+      h3 {
+        margin: 0 0 8px 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #eee;
+        padding: 4px 6px;
+      }
+      th {
+        text-align: left;
+        background: #fafafa;
+      }
+      .small {
+        color: #666;
+        font-size: 12px;
+      }
+      .form-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .form-row label {
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      input[type="text"],
+      input[type="number"] {
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 13px;
+        min-width: 80px;
+      }
+      select {
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 13px;
+      }
+      button {
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        background: #f7f7f7;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      button.danger {
+        border-color: #f88;
+        background: #ffecec;
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-size: 11px;
+        border: 1px solid #ddd;
+        margin-right: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h2>DHCP Management</h2>
+      <span class="small">WANT router DHCP server</span>
+    </header>
 
-<div class="cards">
-
-  <!-- GLOBAL SETTINGS -->
-  <div class="card" style="max-width:420px;">
-    <h3>Global Settings</h3>
-    <form id="settingsForm">
-      <div class="form-row">
-        <label>
-          Dynamic lease time (minutes)
-          <input id="dynLeaseMinutes" type="number" min="1" max="1440" value="5">
-        </label>
-        <label>
-          Cleanup interval (seconds)
-          <input id="cleanupSeconds" type="number" min="1" max="3600" value="5">
-        </label>
-        <label style="align-self:flex-end;">
-          &nbsp;
-          <button type="submit">Save</button>
-        </label>
+    <div class="cards">
+      <!-- GLOBAL SETTINGS -->
+      <div class="card" style="max-width: 420px">
+        <h3>Global Settings</h3>
+        <form id="settingsForm">
+          <div class="form-row">
+            <label>
+              Dynamic lease time (minutes)
+              <input
+                id="dynamicLeaseSeconds"
+                type="number"
+                min="1"
+                max="1440"
+                value="5"
+              />
+            </label>
+            <label>
+              Cleanup interval (seconds)
+              <input
+                id="cleanupSeconds"
+                type="number"
+                min="1"
+                max="3600"
+                value="5"
+              />
+            </label>
+            <label style="align-self: flex-end">
+              &nbsp;
+              <button type="submit">Save</button>
+            </label>
+          </div>
+          <div class="small" id="settingsMsg"></div>
+        </form>
       </div>
-      <div class="small" id="settingsMsg"></div>
-    </form>
-  </div>
 
-  <!-- POOLS -->
-  <div class="card">
-    <h3>DHCP Pools</h3>
+      <!-- POOLS -->
+      <div class="card">
+        <h3>DHCP Pools</h3>
 
-    <form id="poolForm">
-      <div class="form-row">
-        <label>
-          Name
-          <input id="poolName" type="text" placeholder="LAN-10.10.10.0" required>
-        </label>
-        <label>
-          Interface GUID
-          <input id="poolIface" type="text" placeholder="GUID без {}" required>
-        </label>
-        <label>
-          Network
-          <input id="poolNet" type="text" value="10.10.10.0">
-        </label>
-        <label>
-          Mask
-          <input id="poolMask" type="text" value="255.255.255.0">
-        </label>
+        <form id="poolForm">
+          <div class="form-row">
+            <label>
+              Name
+              <input
+                id="poolName"
+                type="text"
+                placeholder="LAN-10.10.10.0"
+                required
+              />
+            </label>
+            <label>
+              Interface GUID
+              <input
+                id="poolIface"
+                type="text"
+                placeholder="GUID without {}"
+                required
+              />
+            </label>
+            <label>
+              Network
+              <input id="poolNet" type="text" value="10.10.10.0" />
+            </label>
+            <label>
+              Mask
+              <input id="poolMask" type="text" value="255.255.255.0" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>
+              Range start
+              <input id="poolStart" type="text" value="10.10.10.50" />
+            </label>
+            <label>
+              Range end
+              <input id="poolEnd" type="text" value="10.10.10.200" />
+            </label>
+            <label>
+              Gateway
+              <input id="poolGw" type="text" value="10.10.10.1" />
+            </label>
+            <label>
+              Flags
+              <span>
+                <label class="small"
+                  ><input id="poolEnabled" type="checkbox" checked />
+                  enabled</label
+                ><br />
+                <label class="small"
+                  ><input id="poolDyn" type="checkbox" checked /> dynamic</label
+                ><br />
+                <label class="small"
+                  ><input id="poolAuto" type="checkbox" checked />
+                  automatic</label
+                ><br />
+                <label class="small"
+                  ><input id="poolManual" type="checkbox" checked />
+                  manual</label
+                >
+              </span>
+            </label>
+            <label style="align-self: flex-end">
+              &nbsp;
+              <button type="submit" id="poolSubmitBtn">Create pool</button>
+            </label>
+          </div>
+          <input type="hidden" id="editingPoolId" value="" />
+          <div class="small" id="poolFormMsg"></div>
+        </form>
+
+        <table id="poolsTbl">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Network</th>
+              <th>Range</th>
+              <th>GW</th>
+              <th>Flags</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="6" class="small">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="form-row">
-        <label>
-          Range start
-          <input id="poolStart" type="text" value="10.10.10.50">
-        </label>
-        <label>
-          Range end
-          <input id="poolEnd" type="text" value="10.10.10.200">
-        </label>
-        <label>
-          Gateway
-          <input id="poolGw" type="text" value="10.10.10.1">
-        </label>
-        <label>
-          Flags
-          <span>
-            <label class="small"><input id="poolEnabled" type="checkbox" checked> enabled</label><br>
-            <label class="small"><input id="poolDyn" type="checkbox" checked> dynamic</label><br>
-            <label class="small"><input id="poolAuto" type="checkbox" checked> automatic</label><br>
-            <label class="small"><input id="poolManual" type="checkbox" checked> manual</label>
-          </span>
-        </label>
-        <label style="align-self:flex-end;">
-          &nbsp;
-          <button type="submit" id="poolSubmitBtn">Create pool</button>
-        </label>
+
+      <!-- MANUAL RESERVATIONS -->
+      <div class="card">
+        <h3>Manual Reservations</h3>
+        <div class="form-row">
+          <label>
+            Pool
+            <select id="resPoolSelect"></select>
+          </label>
+          <button id="btnReloadRes">Reload</button>
+        </div>
+
+        <form id="resForm">
+          <div class="form-row">
+            <label>
+              MAC (AA-BB-CC-DD-EE-FF)
+              <input id="resMac" type="text" placeholder="AA-BB-CC-DD-EE-FF" />
+            </label>
+            <label>
+              IP
+              <input id="resIp" type="text" placeholder="10.10.10.10" />
+            </label>
+            <label style="align-self: flex-end">
+              &nbsp;
+              <button type="submit">Add / Update</button>
+            </label>
+          </div>
+        </form>
+
+        <table id="resTbl">
+          <thead>
+            <tr>
+              <th>MAC</th>
+              <th>IP</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="3" class="small">Select pool</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <input type="hidden" id="editingPoolId" value="">
-      <div class="small" id="poolFormMsg"></div>
-    </form>
 
-    <table id="poolsTbl">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Network</th>
-          <th>Range</th>
-          <th>GW</th>
-          <th>Flags</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="6" class="small">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+      <!-- LEASES -->
+      <div class="card">
+        <h3>Current Leases</h3>
+        <div class="form-row">
+          <label>
+            Filter by pool
+            <select id="leasePoolFilter">
+              <option value="">All</option>
+            </select>
+          </label>
+          <button id="btnReloadLeases">Reload</button>
+        </div>
 
-  <!-- MANUAL RESERVATIONS -->
-  <div class="card">
-    <h3>Manual Reservations</h3>
-    <div class="form-row">
-      <label>
-        Pool
-        <select id="resPoolSelect"></select>
-      </label>
-      <button id="btnReloadRes">Reload</button>
+        <table id="leasesTbl">
+          <thead>
+            <tr>
+              <th>IP</th>
+              <th>MAC</th>
+              <th>Pool</th>
+              <th>Interface</th>
+              <th>Type</th>
+              <th>Remaining</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="6" class="small">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <form id="resForm">
-      <div class="form-row">
-        <label>
-          MAC (AA-BB-CC-DD-EE-FF)
-          <input id="resMac" type="text" placeholder="AA-BB-CC-DD-EE-FF">
-        </label>
-        <label>
-          IP
-          <input id="resIp" type="text" placeholder="10.10.10.10">
-        </label>
-        <label style="align-self:flex-end;">
-          &nbsp;
-          <button type="submit">Add / Update</button>
-        </label>
-      </div>
-    </form>
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
+      const api = window.api;
 
-    <table id="resTbl">
-      <thead>
-        <tr><th>MAC</th><th>IP</th><th></th></tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="3" class="small">Select pool</td></tr>
-      </tbody>
-    </table>
-  </div>
+      // Global settings use seconds throughout the API and UI.
 
-  <!-- LEASES -->
-  <div class="card">
-    <h3>Current Leases</h3>
-    <div class="form-row">
-      <label>
-        Filter by pool
-        <select id="leasePoolFilter">
-          <option value="">All</option>
-        </select>
-      </label>
-      <button id="btnReloadLeases">Reload</button>
-    </div>
+      const settingsForm = document.getElementById("settingsForm");
+      const dynLeaseInput = document.getElementById("dynamicLeaseSeconds"); // Seconds.
+      const cleanupInput = document.getElementById("cleanupSeconds");
+      const settingsMsg = document.getElementById("settingsMsg");
 
-    <table id="leasesTbl">
-      <thead>
-        <tr>
-          <th>IP</th>
-          <th>MAC</th>
-          <th>Pool</th>
-          <th>Interface</th>
-          <th>Type</th>
-          <th>Remaining</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="6" class="small">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
+      // The server returns durations in seconds.
+      async function loadSettings() {
+        try {
+          const s = await api.getDhcpSettings();
 
-</div>
+          dynLeaseInput.value = s.dynamicLeaseSeconds ?? "";
+          cleanupInput.value = s.cleanupIntervalSeconds ?? "";
 
-<script type="module">
-const $ = s => document.querySelector(s);
-const api = window.api;
+          settingsMsg.textContent = "";
+        } catch (e) {
+          console.error(e);
+          settingsMsg.textContent = "Error loading settings";
+        }
+      }
 
-// ───────────────── GLOBAL SETTINGS — В СЕКУНДАХ ─────────────────
+      // Preserve the API duration unit when saving.
+      settingsForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-const settingsForm   = document.getElementById('settingsForm');
-const dynLeaseInput  = document.getElementById('dynLeaseMinutes');  // секунды!
-const cleanupInput   = document.getElementById('cleanupSeconds');
-const settingsMsg    = document.getElementById('settingsMsg');
+        const leaseSec = parseInt(dynLeaseInput.value, 10);
+        const cleanupSec = parseInt(cleanupInput.value, 10);
 
-// Загрузка настроек из API (значения приходят в секундах)
-async function loadSettings() {
-  try {
-    const s = await api.getDhcpSettings();
+        if (
+          isNaN(leaseSec) ||
+          isNaN(cleanupSec) ||
+          leaseSec <= 0 ||
+          cleanupSec <= 0
+        ) {
+          alert("Values must be positive integers (seconds)");
+          return;
+        }
 
-    dynLeaseInput.value = s.dynamicLeaseSeconds ?? '';
-    cleanupInput.value  = s.cleanupIntervalSeconds ?? '';
+        try {
+          await api.setDhcpSettings(leaseSec, cleanupSec);
 
-    settingsMsg.textContent = '';
-  } catch (e) {
-    console.error(e);
-    settingsMsg.textContent = 'Error loading settings';
-  }
-}
+          settingsMsg.textContent = "Saved ✔";
+          await loadSettings();
+        } catch (err) {
+          console.error(err);
+          settingsMsg.textContent = "Error saving settings";
+        }
+      });
 
-// Сохранение — тоже секундами
-settingsForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
+      // ───────────────── POOLS ─────────────────
 
-  const leaseSec   = parseInt(dynLeaseInput.value, 10);
-  const cleanupSec = parseInt(cleanupInput.value, 10);
+      let poolsCache = [];
 
-  if (isNaN(leaseSec) || isNaN(cleanupSec) || leaseSec <= 0 || cleanupSec <= 0) {
-    alert('Values must be positive integers (seconds)');
-    return;
-  }
+      function flagsToHtml(p) {
+        const pills = [];
+        if (p.enabled ?? p.Enabled) pills.push('<span class="pill">EN</span>');
+        if (p.dynamicEnabled ?? p.DynamicEnabled)
+          pills.push('<span class="pill">DYN</span>');
+        if (p.automaticEnabled ?? p.AutomaticEnabled)
+          pills.push('<span class="pill">AUTO</span>');
+        if (p.manualEnabled ?? p.ManualEnabled)
+          pills.push('<span class="pill">MAN</span>');
+        return pills.join(" ");
+      }
 
-  try {
-    await api.setDhcpSettings(leaseSec, cleanupSec);
+      async function loadPools() {
+        const tb = $("#poolsTbl tbody");
+        tb.innerHTML = '<tr><td colspan="6" class="small">Loading...</td></tr>';
 
-    settingsMsg.textContent = 'Saved ✔';
-    await loadSettings();
-  } catch (err) {
-    console.error(err);
-    settingsMsg.textContent = 'Error saving settings';
-  }
-});
+        try {
+          const pools = await api.getDhcpPools();
+          poolsCache = pools;
 
+          // Refresh pool selectors.
+          fillPoolSelects(pools);
 
+          if (!pools.length) {
+            tb.innerHTML =
+              '<tr><td colspan="6" class="small">No pools configured</td></tr>';
+            return;
+          }
 
-// ───────────────── POOLS ─────────────────
+          tb.innerHTML = "";
+          for (const p of pools) {
+            const net =
+              (p.network || p.Network) + "/" + maskToPrefix(p.mask || p.Mask);
+            const range =
+              (p.rangeStart || p.RangeStart) +
+              " – " +
+              (p.rangeEnd || p.RangeEnd);
+            const gw = p.gateway || p.Gateway || "";
 
-let poolsCache = [];
-
-function flagsToHtml(p) {
-  const pills = [];
-  if (p.enabled ?? p.Enabled) pills.push('<span class="pill">EN</span>');
-  if (p.dynamicEnabled ?? p.DynamicEnabled) pills.push('<span class="pill">DYN</span>');
-  if (p.automaticEnabled ?? p.AutomaticEnabled) pills.push('<span class="pill">AUTO</span>');
-  if (p.manualEnabled ?? p.ManualEnabled) pills.push('<span class="pill">MAN</span>');
-  return pills.join(' ');
-}
-
-async function loadPools() {
-  const tb = $('#poolsTbl tbody');
-  tb.innerHTML = '<tr><td colspan="6" class="small">Loading...</td></tr>';
-
-  try {
-    const pools = await api.getDhcpPools();
-    poolsCache = pools;
-
-    // заполнить селекты
-    fillPoolSelects(pools);
-
-    if (!pools.length) {
-      tb.innerHTML = '<tr><td colspan="6" class="small">No pools configured</td></tr>';
-      return;
-    }
-
-    tb.innerHTML = '';
-    for (const p of pools) {
-      const net = (p.network || p.Network) + '/' + maskToPrefix(p.mask || p.Mask);
-      const range = (p.rangeStart||p.RangeStart) + ' – ' + (p.rangeEnd||p.RangeEnd);
-      const gw = p.gateway || p.Gateway || '';
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.name||p.Name}</td>
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+        <td>${p.name || p.Name}</td>
         <td>${net}</td>
         <td>${range}</td>
         <td>${gw}</td>
         <td>${flagsToHtml(p)}</td>
         <td>
-          <button data-act="edit" data-id="${p.id||p.Id}">Edit</button>
-          <button data-act="del" data-id="${p.id||p.Id}" class="danger">Del</button>
+          <button data-act="edit" data-id="${p.id || p.Id}">Edit</button>
+          <button data-act="del" data-id="${p.id || p.Id}" class="danger">Del</button>
         </td>`;
-      tb.appendChild(tr);
-    }
-  } catch (e) {
-    console.error(e);
-    tb.innerHTML = '<tr><td colspan="6" class="small">Error loading pools</td></tr>';
-  }
-}
+            tb.appendChild(tr);
+          }
+        } catch (e) {
+          console.error(e);
+          tb.innerHTML =
+            '<tr><td colspan="6" class="small">Error loading pools</td></tr>';
+        }
+      }
 
-function fillPoolSelects(pools) {
-  const sel1 = $('#resPoolSelect');
-  const sel2 = $('#leasePoolFilter');
+      function fillPoolSelects(pools) {
+        const sel1 = $("#resPoolSelect");
+        const sel2 = $("#leasePoolFilter");
 
-  const currentRes = sel1.value;
-  const currentLease = sel2.value;
+        const currentRes = sel1.value;
+        const currentLease = sel2.value;
 
-  sel1.innerHTML = '';
-  sel2.innerHTML = '<option value="">All</option>';
+        sel1.innerHTML = "";
+        sel2.innerHTML = '<option value="">All</option>';
 
-  for (const p of pools) {
-    const id = p.id || p.Id;
-    const name = p.name || p.Name || id;
+        for (const p of pools) {
+          const id = p.id || p.Id;
+          const name = p.name || p.Name || id;
 
-    const opt1 = document.createElement('option');
-    opt1.value = id;
-    opt1.textContent = name;
-    sel1.appendChild(opt1);
+          const opt1 = document.createElement("option");
+          opt1.value = id;
+          opt1.textContent = name;
+          sel1.appendChild(opt1);
 
-    const opt2 = document.createElement('option');
-    opt2.value = id;
-    opt2.textContent = name;
-    sel2.appendChild(opt2);
-  }
+          const opt2 = document.createElement("option");
+          opt2.value = id;
+          opt2.textContent = name;
+          sel2.appendChild(opt2);
+        }
 
-  if (currentRes) sel1.value = currentRes;
-  if (currentLease) sel2.value = currentLease;
-}
+        if (currentRes) sel1.value = currentRes;
+        if (currentLease) sel2.value = currentLease;
+      }
 
-function maskToPrefix(maskStr) {
-  if (!maskStr) return '';
-  const parts = maskStr.split('.').map(x=>parseInt(x,10));
-  let bits = 0;
-  for (const p of parts) bits += p.toString(2).replace(/0/g,'').length;
-  return bits;
-}
+      function maskToPrefix(maskStr) {
+        if (!maskStr) return "";
+        const parts = maskStr.split(".").map((x) => parseInt(x, 10));
+        let bits = 0;
+        for (const p of parts) bits += p.toString(2).replace(/0/g, "").length;
+        return bits;
+      }
 
-$('#poolsTbl').addEventListener('click', async e => {
-  const btn = e.target.closest('button[data-act]');
-  if (!btn) return;
-  const id = btn.dataset.id;
-  const act = btn.dataset.act;
+      $("#poolsTbl").addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-act]");
+        if (!btn) return;
+        const id = btn.dataset.id;
+        const act = btn.dataset.act;
 
-  if (act === 'edit') {
-    const pool = poolsCache.find(p => (p.id||p.Id) === id);
-    if (!pool) return;
+        if (act === "edit") {
+          const pool = poolsCache.find((p) => (p.id || p.Id) === id);
+          if (!pool) return;
 
-    $('#editingPoolId').value = id;
-    $('#poolName').value = pool.name||pool.Name||'';
-    $('#poolIface').value = pool.interfaceId||pool.InterfaceId||'';
-    $('#poolNet').value = pool.network||pool.Network||'';
-    $('#poolMask').value = pool.mask||pool.Mask||'';
-    $('#poolStart').value = pool.rangeStart||pool.RangeStart||'';
-    $('#poolEnd').value = pool.rangeEnd||pool.RangeEnd||'';
-    $('#poolGw').value = pool.gateway||pool.Gateway||'';
-    $('#poolEnabled').checked = pool.enabled ?? pool.Enabled;
-    $('#poolDyn').checked = pool.dynamicEnabled ?? pool.DynamicEnabled;
-    $('#poolAuto').checked = pool.automaticEnabled ?? pool.AutomaticEnabled;
-    $('#poolManual').checked = pool.manualEnabled ?? pool.ManualEnabled;
+          $("#editingPoolId").value = id;
+          $("#poolName").value = pool.name || pool.Name || "";
+          $("#poolIface").value = pool.interfaceId || pool.InterfaceId || "";
+          $("#poolNet").value = pool.network || pool.Network || "";
+          $("#poolMask").value = pool.mask || pool.Mask || "";
+          $("#poolStart").value = pool.rangeStart || pool.RangeStart || "";
+          $("#poolEnd").value = pool.rangeEnd || pool.RangeEnd || "";
+          $("#poolGw").value = pool.gateway || pool.Gateway || "";
+          $("#poolEnabled").checked = pool.enabled ?? pool.Enabled;
+          $("#poolDyn").checked = pool.dynamicEnabled ?? pool.DynamicEnabled;
+          $("#poolAuto").checked =
+            pool.automaticEnabled ?? pool.AutomaticEnabled;
+          $("#poolManual").checked = pool.manualEnabled ?? pool.ManualEnabled;
 
-    $('#poolSubmitBtn').textContent = 'Save changes';
-    $('#poolFormMsg').textContent = `Editing pool ${pool.name||pool.Name||id}`;
-  }
-  else if (act === 'del') {
-    if (!confirm('Delete pool and its leases?')) return;
-    try {
-      await api.deleteDhcpPool(id);
-      await loadPools();
-      await loadLeases();
-      $('#poolFormMsg').textContent = 'Pool deleted';
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting pool');
-    }
-  }
-});
+          $("#poolSubmitBtn").textContent = "Save changes";
+          $("#poolFormMsg").textContent =
+            `Editing pool ${pool.name || pool.Name || id}`;
+        } else if (act === "del") {
+          if (!confirm("Delete pool and its leases?")) return;
+          try {
+            await api.deleteDhcpPool(id);
+            await loadPools();
+            await loadLeases();
+            $("#poolFormMsg").textContent = "Pool deleted";
+          } catch (err) {
+            console.error(err);
+            alert("Error deleting pool");
+          }
+        }
+      });
 
-$('#poolForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const payload = {
-    name: $('#poolName').value.trim(),
-    interfaceId: $('#poolIface').value.trim(),
-    network: $('#poolNet').value.trim(),
-    mask: $('#poolMask').value.trim(),
-    rangeStart: $('#poolStart').value.trim(),
-    rangeEnd: $('#poolEnd').value.trim(),
-    gateway: $('#poolGw').value.trim(),
-    enabled: $('#poolEnabled').checked,
-    dynamicEnabled: $('#poolDyn').checked,
-    automaticEnabled: $('#poolAuto').checked,
-    manualEnabled: $('#poolManual').checked
-  };
+      $("#poolForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+          name: $("#poolName").value.trim(),
+          interfaceId: $("#poolIface").value.trim(),
+          network: $("#poolNet").value.trim(),
+          mask: $("#poolMask").value.trim(),
+          rangeStart: $("#poolStart").value.trim(),
+          rangeEnd: $("#poolEnd").value.trim(),
+          gateway: $("#poolGw").value.trim(),
+          enabled: $("#poolEnabled").checked,
+          dynamicEnabled: $("#poolDyn").checked,
+          automaticEnabled: $("#poolAuto").checked,
+          manualEnabled: $("#poolManual").checked,
+        };
 
-  const id = $('#editingPoolId').value.trim();
-  try {
-    if (id) {
-      await api.updateDhcpPool(id, payload);
-      $('#poolFormMsg').textContent = 'Pool updated';
-    } else {
-      await api.createDhcpPool(payload);
-      $('#poolFormMsg').textContent = 'Pool created';
-    }
+        const id = $("#editingPoolId").value.trim();
+        try {
+          if (id) {
+            await api.updateDhcpPool(id, payload);
+            $("#poolFormMsg").textContent = "Pool updated";
+          } else {
+            await api.createDhcpPool(payload);
+            $("#poolFormMsg").textContent = "Pool created";
+          }
 
-    $('#editingPoolId').value = '';
-    $('#poolSubmitBtn').textContent = 'Create pool';
-    await loadPools();
-  } catch (err) {
-    console.error(err);
-    $('#poolFormMsg').textContent = 'Error saving pool';
-  }
-});
+          $("#editingPoolId").value = "";
+          $("#poolSubmitBtn").textContent = "Create pool";
+          await loadPools();
+        } catch (err) {
+          console.error(err);
+          $("#poolFormMsg").textContent = "Error saving pool";
+        }
+      });
 
-// ───────────────── MANUAL RESERVATIONS ─────────────────
+      // ───────────────── MANUAL RESERVATIONS ─────────────────
 
-async function loadReservations() {
-  const poolId = $('#resPoolSelect').value;
-  const tb = $('#resTbl tbody');
-  if (!poolId) {
-    tb.innerHTML = '<tr><td colspan="3" class="small">Select pool</td></tr>';
-    return;
-  }
+      async function loadReservations() {
+        const poolId = $("#resPoolSelect").value;
+        const tb = $("#resTbl tbody");
+        if (!poolId) {
+          tb.innerHTML =
+            '<tr><td colspan="3" class="small">Select pool</td></tr>';
+          return;
+        }
 
-  try {
-    const pool = await api.getDhcpPool(poolId);
-    const res = pool.manualReservations || pool.ManualReservations;
-    const entries = Object.entries(res || {});
+        try {
+          const pool = await api.getDhcpPool(poolId);
+          const res = pool.manualReservations || pool.ManualReservations;
+          const entries = Object.entries(res || {});
 
-    if (!entries.length) {
-      tb.innerHTML = '<tr><td colspan="3" class="small">No reservations</td></tr>';
-      return;
-    }
+          if (!entries.length) {
+            tb.innerHTML =
+              '<tr><td colspan="3" class="small">No reservations</td></tr>';
+            return;
+          }
 
-    tb.innerHTML = '';
-    for (const [mac, ip] of entries) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+          tb.innerHTML = "";
+          for (const [mac, ip] of entries) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
         <td>${mac}</td>
         <td>${ip}</td>
         <td><button data-act="del-res" data-mac="${mac}">Del</button></td>`;
-      tb.appendChild(tr);
-    }
-  } catch (e) {
-    console.error(e);
-    tb.innerHTML = '<tr><td colspan="3" class="small">Error loading reservations</td></tr>';
-  }
-}
-
-$('#resPoolSelect').addEventListener('change', loadReservations);
-$('#btnReloadRes').addEventListener('click', loadReservations);
-
-$('#resForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const poolId = $('#resPoolSelect').value;
-  if (!poolId) {
-    alert('Select pool first');
-    return;
-  }
-  const mac = $('#resMac').value.trim();
-  const ip = $('#resIp').value.trim();
-  if (!mac || !ip) {
-    alert('MAC and IP required');
-    return;
-  }
-
-  try {
-    await api.addDhcpReservation(poolId, { mac, ip });
-    $('#resMac').value = '';
-    $('#resIp').value = '';
-    await loadReservations();
-  } catch (err) {
-    console.error(err);
-    alert('Error adding reservation');
-  }
-});
-
-$('#resTbl').addEventListener('click', async e => {
-  const btn = e.target.closest('button[data-act="del-res"]');
-  if (!btn) return;
-  const poolId = $('#resPoolSelect').value;
-  const mac = btn.dataset.mac;
-  if (!poolId || !mac) return;
-
-  if (!confirm(`Delete reservation ${mac}?`)) return;
-  try {
-    await api.deleteDhcpReservation(poolId, mac);
-    await loadReservations();
-  } catch (err) {
-    console.error(err);
-    alert('Error deleting reservation');
-  }
-});
-
-// ───────────────── LEASES ─────────────────
-
-async function loadLeases() {
-  const poolFilter = $('#leasePoolFilter').value;
-  const tb = $('#leasesTbl tbody');
-  tb.innerHTML = '<tr><td colspan="6" class="small">Loading...</td></tr>';
-
-  try {
-    let leases;
-    if (poolFilter) {
-      leases = await api.getDhcpPoolLeases(poolFilter);
-    } else {
-      leases = await api.getDhcpLeases();
-    }
-
-    if (!leases.length) {
-      tb.innerHTML = '<tr><td colspan="6" class="small">No active leases</td></tr>';
-      return;
-    }
-
-    const poolsById = {};
-    for (const p of poolsCache) {
-      poolsById[p.id||p.Id] = p.name||p.Name|| (p.id||p.Id);
-    }
-
-    tb.innerHTML = '';
-    for (const l of leases) {
-      const ip = l.address || l.Address;
-      const mac = l.macString || l.MacString || (l.macAddress || l.MacAddress);
-      const poolId = l.poolId || l.PoolId;
-      const iface = l.interfaceId || l.InterfaceId || '';
-      const type = l.allocationType || l.AllocationType || '';
-      const remaining = l.remaining || l.Remaining;
-
-      let remainTxt = '';
-      if (remaining) {
-        const sec = remaining.totalSeconds ?? remaining.Seconds ?? 0;
-        if (sec <= 0) remainTxt = 'expired';
-        else if (sec < 60) remainTxt = `${Math.round(sec)} s`;
-        else remainTxt = `${Math.round(sec/60)} min`;
-      } else {
-        remainTxt = 'permanent';
+            tb.appendChild(tr);
+          }
+        } catch (e) {
+          console.error(e);
+          tb.innerHTML =
+            '<tr><td colspan="3" class="small">Error loading reservations</td></tr>';
+        }
       }
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+      $("#resPoolSelect").addEventListener("change", loadReservations);
+      $("#btnReloadRes").addEventListener("click", loadReservations);
+
+      $("#resForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const poolId = $("#resPoolSelect").value;
+        if (!poolId) {
+          alert("Select pool first");
+          return;
+        }
+        const mac = $("#resMac").value.trim();
+        const ip = $("#resIp").value.trim();
+        if (!mac || !ip) {
+          alert("MAC and IP required");
+          return;
+        }
+
+        try {
+          await api.addDhcpReservation(poolId, { mac, ip });
+          $("#resMac").value = "";
+          $("#resIp").value = "";
+          await loadReservations();
+        } catch (err) {
+          console.error(err);
+          alert("Error adding reservation");
+        }
+      });
+
+      $("#resTbl").addEventListener("click", async (e) => {
+        const btn = e.target.closest('button[data-act="del-res"]');
+        if (!btn) return;
+        const poolId = $("#resPoolSelect").value;
+        const mac = btn.dataset.mac;
+        if (!poolId || !mac) return;
+
+        if (!confirm(`Delete reservation ${mac}?`)) return;
+        try {
+          await api.deleteDhcpReservation(poolId, mac);
+          await loadReservations();
+        } catch (err) {
+          console.error(err);
+          alert("Error deleting reservation");
+        }
+      });
+
+      // ───────────────── LEASES ─────────────────
+
+      async function loadLeases() {
+        const poolFilter = $("#leasePoolFilter").value;
+        const tb = $("#leasesTbl tbody");
+        tb.innerHTML = '<tr><td colspan="6" class="small">Loading...</td></tr>';
+
+        try {
+          let leases;
+          if (poolFilter) {
+            leases = await api.getDhcpPoolLeases(poolFilter);
+          } else {
+            leases = await api.getDhcpLeases();
+          }
+
+          if (!leases.length) {
+            tb.innerHTML =
+              '<tr><td colspan="6" class="small">No active leases</td></tr>';
+            return;
+          }
+
+          const poolsById = {};
+          for (const p of poolsCache) {
+            poolsById[p.id || p.Id] = p.name || p.Name || p.id || p.Id;
+          }
+
+          tb.innerHTML = "";
+          for (const l of leases) {
+            const ip = l.address || l.Address;
+            const mac =
+              l.macString || l.MacString || l.macAddress || l.MacAddress;
+            const poolId = l.poolId || l.PoolId;
+            const iface = l.interfaceId || l.InterfaceId || "";
+            const type = l.allocationType || l.AllocationType || "";
+            const remaining = l.remaining || l.Remaining;
+
+            let remainTxt = "";
+            if (remaining) {
+              const sec = remaining.totalSeconds ?? remaining.Seconds ?? 0;
+              if (sec <= 0) remainTxt = "expired";
+              else if (sec < 60) remainTxt = `${Math.round(sec)} s`;
+              else remainTxt = `${Math.round(sec / 60)} min`;
+            } else {
+              remainTxt = "permanent";
+            }
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
         <td>${ip}</td>
         <td>${mac}</td>
         <td>${poolsById[poolId] || poolId}</td>
         <td>${iface}</td>
         <td>${type}</td>
         <td>${remainTxt}</td>`;
-      tb.appendChild(tr);
-    }
-  } catch (e) {
-    console.error(e);
-    tb.innerHTML = '<tr><td colspan="6" class="small">Error loading leases</td></tr>';
-  }
-}
+            tb.appendChild(tr);
+          }
+        } catch (e) {
+          console.error(e);
+          tb.innerHTML =
+            '<tr><td colspan="6" class="small">Error loading leases</td></tr>';
+        }
+      }
 
-$('#leasePoolFilter').addEventListener('change', loadLeases);
-$('#btnReloadLeases').addEventListener('click', loadLeases);
+      $("#leasePoolFilter").addEventListener("change", loadLeases);
+      $("#btnReloadLeases").addEventListener("click", loadLeases);
 
-// ───────────────── INIT ─────────────────
+      // ───────────────── INIT ─────────────────
 
-(async function init() {
-  await loadSettings();
-  await loadPools();
-  await loadReservations();
-  await loadLeases();
+      (async function init() {
+        await loadSettings();
+        await loadPools();
+        await loadReservations();
+        await loadLeases();
 
-  // автообновление только лиз каждые 5 сек
-  setInterval(loadLeases, 5000);
-})();
-</script>
-</body>
+        // Refresh leases without overwriting pool form edits.
+        setInterval(loadLeases, 5000);
+      })();
+    </script>
+  </body>
 </html>

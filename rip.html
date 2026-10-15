@@ -1,132 +1,163 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8"/>
-<title>WANT — RIP Settings</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin:16px; }
-  .card { border:1px solid #ddd; padding:12px; background:white; border-radius:10px; margin-bottom:16px; }
-  table { width:100%; border-collapse:collapse; margin-top:8px; }
-  th,td { padding:6px; border-bottom:1px solid #eee; }
-  button { padding:6px 10px; border-radius:6px; border:1px solid #ccc; background:#f7f7f7; cursor:pointer; }
-  input { padding:4px 6px; font-size:14px; border-radius:6px; border:1px solid #ccc; width:80px; }
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <title>WANT — RIP Settings</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 16px;
+      }
+      .card {
+        border: 1px solid #ddd;
+        padding: 12px;
+        background: white;
+        border-radius: 10px;
+        margin-bottom: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+      }
+      th,
+      td {
+        padding: 6px;
+        border-bottom: 1px solid #eee;
+      }
+      button {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #f7f7f7;
+        cursor: pointer;
+      }
+      input {
+        padding: 4px 6px;
+        font-size: 14px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        width: 80px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h3>RIP Timers</h3>
+      <div>
+        <label>Update <input id="tUpdate" type="number" min="5" /></label>
+        <label>Invalid <input id="tInvalid" type="number" min="30" /></label>
+        <label>Holddown <input id="tHold" type="number" min="30" /></label>
+        <label>Flush <input id="tFlush" type="number" min="30" /></label>
+        <button id="saveTimers">Save</button>
+      </div>
+    </div>
 
-<div class="card">
-  <h3>RIP Timers</h3>
-  <div>
-    <label>Update <input id="tUpdate" type="number" min="5"></label>
-    <label>Invalid <input id="tInvalid" type="number" min="30"></label>
-    <label>Holddown <input id="tHold" type="number" min="30"></label>
-    <label>Flush <input id="tFlush" type="number" min="30"></label>
-    <button id="saveTimers">Save</button>
-  </div>
-</div>
+    <div class="card">
+      <h3>RIP Interfaces</h3>
+      <table id="ripTbl">
+        <thead>
+          <tr>
+            <th>Interface</th>
+            <th>State</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="3">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-<div class="card">
-  <h3>RIP Interfaces</h3>
-  <table id="ripTbl">
-    <thead>
-      <tr><th>Interface</th><th>State</th><th>Action</th></tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="3">Loading…</td></tr>
-    </tbody>
-  </table>
-</div>
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
 
-<script type="module">
-const $ = s => document.querySelector(s);
+      // ===== TIMERS =====
 
-// ===== TIMERS =====
-async function loadTimers(){
-  try {
-    const t = await window.api.getRipInterfaces(); // intentionally wrong? NO, fix below
-  } catch {}
-}
+      // Load RIP timer settings.
+      async function loadRipTimers() {
+        try {
+          const t = await window.api.getRipTimers();
+          $("#tUpdate").value = t.updateSeconds;
+          $("#tInvalid").value = t.invalidSeconds;
+          $("#tHold").value = t.holddownSeconds;
+          $("#tFlush").value = t.flushSeconds;
+        } catch (e) {
+          console.error(e);
+        }
+      }
 
-// Правильно загружаем таймеры
-async function loadRipTimers(){
-  try {
-    const t = await window.api.getRipTimers();
-    $('#tUpdate').value = t.updateSeconds;
-    $('#tInvalid').value = t.invalidSeconds;
-    $('#tHold').value = t.holddownSeconds;
-    $('#tFlush').value  = t.flushSeconds;
-  } catch(e){ console.error(e); }
-}
+      $("#saveTimers").onclick = async () => {
+        try {
+          await window.api.setRipTimers({
+            updateSeconds: Number($("#tUpdate").value),
+            invalidSeconds: Number($("#tInvalid").value),
+            holddownSeconds: Number($("#tHold").value),
+            flushSeconds: Number($("#tFlush").value),
+          });
+          alert("Timers updated");
+        } catch {
+          alert("Error saving timers");
+        }
+      };
 
-$('#saveTimers').onclick = async () =>{
-  try {
-    await window.api.setRipTimers({
-      updateSeconds: Number($('#tUpdate').value),
-      invalidSeconds: Number($('#tInvalid').value),
-      holddownSeconds: Number($('#tHold').value),
-      flushSeconds: Number($('#tFlush').value)
-    });
-    alert("Timers updated");
-  } catch {
-    alert("Error saving timers");
-  }
-};
+      // ===== INTERFACES =====
 
-// ===== INTERFACES =====
+      async function loadRipInterfaces() {
+        const tb = $("#ripTbl tbody");
+        tb.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
+        try {
+          const ifs = await window.api.getRipInterfaces();
+          tb.innerHTML = "";
+          if (!ifs.length) {
+            tb.innerHTML = '<tr><td colspan="3">No interfaces</td></tr>';
+            return;
+          }
 
-async function loadRipInterfaces(){
-  const tb = $('#ripTbl tbody');
-  tb.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
-  try{
-    const ifs = await window.api.getRipInterfaces();
-    tb.innerHTML = '';
-    if(!ifs.length){
-      tb.innerHTML = '<tr><td colspan="3">No interfaces</td></tr>';
-      return;
-    }
-
-    for(const r of ifs){
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+          for (const r of ifs) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
         <td>${r.interfaceId}</td>
-        <td>${r.enabled ? 'ON' : 'OFF'}</td>
+        <td>${r.enabled ? "ON" : "OFF"}</td>
         <td>
-          <button data-id="${r.interfaceId}" data-state="${r.enabled?'on':'off'}">
-            ${r.enabled ? 'Disable' : 'Enable'}
+          <button data-id="${r.interfaceId}" data-state="${r.enabled ? "on" : "off"}">
+            ${r.enabled ? "Disable" : "Enable"}
           </button>
         </td>
       `;
-      tb.appendChild(tr);
-    }
-  } catch(e){
-    console.error(e);
-    tb.innerHTML = '<tr><td colspan="3">Error loading</td></tr>';
-  }
-}
+            tb.appendChild(tr);
+          }
+        } catch (e) {
+          console.error(e);
+          tb.innerHTML = '<tr><td colspan="3">Error loading</td></tr>';
+        }
+      }
 
-document.querySelector('#ripTbl').onclick = async (ev)=>{
-  const btn = ev.target.closest('button[data-id]');
-  if(!btn) return;
+      document.querySelector("#ripTbl").onclick = async (ev) => {
+        const btn = ev.target.closest("button[data-id]");
+        if (!btn) return;
 
-  const id = btn.dataset.id;
-  const enabled = btn.dataset.state === 'on';
+        const id = btn.dataset.id;
+        const enabled = btn.dataset.state === "on";
 
-  try{
-    if(enabled) await window.api.ripDisable(id);
-    else await window.api.ripEnable(id);
+        try {
+          if (enabled) await window.api.ripDisable(id);
+          else await window.api.ripEnable(id);
 
-    loadRipInterfaces();
-  } catch {
-    alert("Error updating interface");
-  }
-};
+          loadRipInterfaces();
+        } catch {
+          alert("Error updating interface");
+        }
+      };
 
-// START
-await loadRipTimers();
-await loadRipInterfaces();
+      // START
+      await loadRipTimers();
+      await loadRipInterfaces();
 
-// auto refresh every 5 sec
-setInterval(loadRipInterfaces, 5000);
-</script>
-</body>
+      // auto refresh every 5 sec
+      setInterval(loadRipInterfaces, 5000);
+    </script>
+  </body>
 </html>

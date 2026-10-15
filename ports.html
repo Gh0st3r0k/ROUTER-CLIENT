@@ -1,109 +1,149 @@
 <!doctype html>
 <html>
-<head>
-<meta charset="utf-8"/>
-<title>WANT – Ports</title>
-<style>
-  body { font-family: system-ui, sans-serif; margin:16px; }
-  .card { border:1px solid #ddd; border-radius:10px; padding:12px; background:white; }
-  table { width:100%; border-collapse:collapse; }
-  th,td { border-bottom:1px solid #eee; padding:6px; font-size:14px; vertical-align:middle; }
-  input,button{ font:inherit; padding:6px 8px; }
-  .small{ color:#666; font-size:12px; }
-  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <h3>Setting ports</h3>
-    <table id="portsTbl">
-      <thead>
-        <tr>
-          <th>GUID</th>
-          <th>Name</th>
-          <th>IP</th>
-          <th>Mask</th>
-          <th>Save</th>
-          <th>Send ARP</th>
-          <th>Proxy ARP</th>
-          <th>RIP</th>
-        </tr>
-      </thead>
-      <tbody><tr><td colspan="8" class="small">Loading…</td></tr></tbody>
-    </table>
-  </div>
-
-<script type="module">
-const $ = s => document.querySelector(s);
-function pick(...xs){ for(const x of xs) if(x!==undefined&&x!==null) return x; return ''; }
-
-let inflight = false;
-let refreshTimer = null;
-
-function isTyping() {
-  const el = document.activeElement;
-  if (!el) return false;
-  return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
-}
-
-function toKey(guid){
-  return (guid ?? '').trim().toUpperCase();
-}
-
-async function loadPorts(){
-  if (isTyping()) return;
-  if (inflight) return;
-  inflight = true;
-
-  const tb = $('#portsTbl tbody');
-  try{
-    // ⏳ грузим параллельно интерфейсы, ProxyARP и RIP
-    const [ifaces, proxyStates, ripStates] = await Promise.all([
-      window.api.getInterfaces(),
-      window.api.getProxyArpStates().catch(()=>[]),
-      window.api.getRipInterfaces().catch(()=>[]),
-    ]);
-
-    tb.innerHTML='';
-
-    if(!Array.isArray(ifaces) || ifaces.length===0){
-      tb.innerHTML = `<tr><td colspan="8" class="small">Пусто</td></tr>`;
-      return;
-    }
-
-    // делаем мапы по GUID
-    const proxyMap = new Map();
-    if (Array.isArray(proxyStates)) {
-      for (const s of proxyStates) {
-        const id = toKey(s.interfaceId ?? s.InterfaceId);
-        if (!id) continue;
-        proxyMap.set(id, !!s.enabled);
+  <head>
+    <meta charset="utf-8" />
+    <title>WANT – Ports</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 16px;
       }
-    }
-
-    const ripMap = new Map();
-    if (Array.isArray(ripStates)) {
-      for (const s of ripStates) {
-        const id = toKey(s.interfaceId ?? s.InterfaceId);
-        if (!id) continue;
-        ripMap.set(id, !!s.enabled);
+      .card {
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 12px;
+        background: white;
       }
-    }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        border-bottom: 1px solid #eee;
+        padding: 6px;
+        font-size: 14px;
+        vertical-align: middle;
+      }
+      input,
+      button {
+        font: inherit;
+        padding: 6px 8px;
+      }
+      .small {
+        color: #666;
+        font-size: 12px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h3>Setting ports</h3>
+      <table id="portsTbl">
+        <thead>
+          <tr>
+            <th>GUID</th>
+            <th>Name</th>
+            <th>IP</th>
+            <th>Mask</th>
+            <th>Save</th>
+            <th>Send ARP</th>
+            <th>Proxy ARP</th>
+            <th>RIP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="8" class="small">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-    ifaces.forEach(p=>{
-      const guidRaw = pick(p.guid,p.Guid) || '';
-      const guid = toKey(guidRaw);
-      const name = pick(p.userName,p.UserName,p.name,p.Name) || '';
-      const ip   = pick(p.ip,p.Ip) || '';
-      const mask = pick(p.mask,p.Mask) || '';
+    <script type="module">
+      const $ = (s) => document.querySelector(s);
+      function pick(...xs) {
+        for (const x of xs) if (x !== undefined && x !== null) return x;
+        return "";
+      }
 
-      // Proxy ARP: по умолчанию ВКЛЮЧЕН, если про интерфейс нет записи
-      const proxyEnabled = proxyMap.has(guid) ? proxyMap.get(guid) : true;
-      // RIP: по умолчанию ВЫКЛЮЧЕН, если записи нет
-      const ripEnabled   = ripMap.has(guid) ? ripMap.get(guid) : false;
+      let inflight = false;
+      let refreshTimer = null;
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+      function isTyping() {
+        const el = document.activeElement;
+        if (!el) return false;
+        return (
+          el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable
+        );
+      }
+
+      function toKey(guid) {
+        return (guid ?? "").trim().toUpperCase();
+      }
+
+      async function loadPorts() {
+        if (isTyping()) return;
+        if (inflight) return;
+        inflight = true;
+
+        const tb = $("#portsTbl tbody");
+        try {
+          // Load interface and protocol state concurrently.
+          const [ifaces, proxyStates, ripStates] = await Promise.all([
+            window.api.getInterfaces(),
+            window.api.getProxyArpStates().catch(() => []),
+            window.api.getRipInterfaces().catch(() => []),
+          ]);
+
+          tb.innerHTML = "";
+
+          if (!Array.isArray(ifaces) || ifaces.length === 0) {
+            tb.innerHTML = `<tr><td colspan="8" class="small">No entries</td></tr>`;
+            return;
+          }
+
+          // Index protocol state by interface GUID.
+          const proxyMap = new Map();
+          if (Array.isArray(proxyStates)) {
+            for (const s of proxyStates) {
+              const id = toKey(s.interfaceId ?? s.InterfaceId);
+              if (!id) continue;
+              proxyMap.set(id, !!s.enabled);
+            }
+          }
+
+          const ripMap = new Map();
+          if (Array.isArray(ripStates)) {
+            for (const s of ripStates) {
+              const id = toKey(s.interfaceId ?? s.InterfaceId);
+              if (!id) continue;
+              ripMap.set(id, !!s.enabled);
+            }
+          }
+
+          ifaces.forEach((p) => {
+            const guidRaw = pick(p.guid, p.Guid) || "";
+            const guid = toKey(guidRaw);
+            const name = pick(p.userName, p.UserName, p.name, p.Name) || "";
+            const ip = pick(p.ip, p.Ip) || "";
+            const mask = pick(p.mask, p.Mask) || "";
+
+            // Proxy ARP defaults to enabled when no explicit state exists.
+            const proxyEnabled = proxyMap.has(guid) ? proxyMap.get(guid) : true;
+            // RIP defaults to disabled.
+            const ripEnabled = ripMap.has(guid) ? ripMap.get(guid) : false;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
         <td>${guidRaw}</td>
         <td><input data-k="name" value="${name}" style="width:160px"/></td>
         <td><input data-k="ip"   value="${ip}"   style="width:140px"/></td>
@@ -118,130 +158,139 @@ async function loadPorts(){
           <button data-act="arp" data-id="${guid}">Send ARP</button>
         </td>
         <td>
-          <button data-act="proxy" data-id="${guid}" data-state="${proxyEnabled ? 'on' : 'off'}">
-            Proxy ARP: ${proxyEnabled ? 'ON' : 'OFF'}
+          <button data-act="proxy" data-id="${guid}" data-state="${proxyEnabled ? "on" : "off"}">
+            Proxy ARP: ${proxyEnabled ? "ON" : "OFF"}
           </button>
         </td>
         <td>
-          <button data-act="rip" data-id="${guid}" data-state="${ripEnabled ? 'on' : 'off'}">
-            RIP: ${ripEnabled ? 'ON' : 'OFF'}
+          <button data-act="rip" data-id="${guid}" data-state="${ripEnabled ? "on" : "off"}">
+            RIP: ${ripEnabled ? "ON" : "OFF"}
           </button>
         </td>`;
-      tb.appendChild(tr);
-    });
+            tb.appendChild(tr);
+          });
 
-    // Делегирование кликов (однажды)
-    if (!tb._bound) {
-      tb._bound = true;
-      tb.addEventListener('click', async ev=>{
-        const btn = ev.target.closest('button'); if(!btn) return;
-        const row = btn.closest('tr'); 
-        const guid = btn.dataset.id;
-        if(!guid) return;
+          // Register delegated click handling once.
+          if (!tb._bound) {
+            tb._bound = true;
+            tb.addEventListener("click", async (ev) => {
+              const btn = ev.target.closest("button");
+              if (!btn) return;
+              const row = btn.closest("tr");
+              const guid = btn.dataset.id;
+              if (!guid) return;
 
-        // SAVE NAME
-        if(btn.dataset.act === 'save-name'){
-          const name = row.querySelector('input[data-k="name"]').value.trim();
-          try { 
-            await window.api.setIfaceDisplayName(guid, { name }); 
-            btn.textContent='Saved'; 
+              // SAVE NAME
+              if (btn.dataset.act === "save-name") {
+                const name = row
+                  .querySelector('input[data-k="name"]')
+                  .value.trim();
+                try {
+                  await window.api.setIfaceDisplayName(guid, { name });
+                  btn.textContent = "Saved";
+                } catch {
+                  btn.textContent = "Err";
+                }
+                setTimeout(() => (btn.textContent = "Save name"), 1200);
+              }
+
+              // SAVE IP/MASK
+              if (btn.dataset.act === "save-addr") {
+                const ip = row.querySelector('input[data-k="ip"]').value.trim();
+                const mask = row
+                  .querySelector('input[data-k="mask"]')
+                  .value.trim();
+                try {
+                  await window.api.setIfaceAddress(guid, { ip, mask });
+                  btn.textContent = "Saved";
+                } catch {
+                  btn.textContent = "Err";
+                }
+                setTimeout(() => (btn.textContent = "Save IP/Mask"), 1200);
+              }
+
+              // SEND ARP
+              if (btn.dataset.act === "arp") {
+                const target = row
+                  .querySelector('input[data-act="target"]')
+                  .value.trim();
+                const src =
+                  row.querySelector('input[data-act="src"]').value.trim() ||
+                  null;
+                try {
+                  await window.api.sendArp(guid, target, src);
+                  btn.textContent = "Sent";
+                } catch {
+                  btn.textContent = "Err";
+                }
+                setTimeout(() => (btn.textContent = "Send ARP"), 1200);
+              }
+
+              // 🔥 PROXY ARP TOGGLE
+              if (btn.dataset.act === "proxy") {
+                const cur = btn.dataset.state === "on";
+                const next = !cur;
+                btn.disabled = true;
+                try {
+                  await window.api.setProxyArp(guid, next);
+                  btn.dataset.state = next ? "on" : "off";
+                  btn.textContent = next ? "Proxy ARP: ON" : "Proxy ARP: OFF";
+                } catch {
+                  // Report the failed update.
+                  btn.textContent = "Err";
+                  setTimeout(() => {
+                    btn.textContent = cur ? "Proxy ARP: ON" : "Proxy ARP: OFF";
+                  }, 1200);
+                } finally {
+                  btn.disabled = false;
+                }
+              }
+
+              // 🔥 RIP TOGGLE
+              if (btn.dataset.act === "rip") {
+                const cur = btn.dataset.state === "on";
+                const next = !cur;
+                btn.disabled = true;
+                try {
+                  if (next) {
+                    await window.api.ripEnable(guid);
+                  } else {
+                    await window.api.ripDisable(guid);
+                  }
+                  btn.dataset.state = next ? "on" : "off";
+                  btn.textContent = next ? "RIP: ON" : "RIP: OFF";
+                } catch {
+                  btn.textContent = "Err";
+                  setTimeout(() => {
+                    btn.textContent = cur ? "RIP: ON" : "RIP: OFF";
+                  }, 1200);
+                } finally {
+                  btn.disabled = false;
+                }
+              }
+            });
           }
-          catch { 
-            btn.textContent='Err'; 
-          }
-          setTimeout(()=>btn.textContent='Save name', 1200);
+        } catch (e) {
+          console.error("[ports] getInterfaces/proxy/rip error:", e);
+          tb.innerHTML = `<tr><td colspan="8" class="small">Could not load data. See the console.</td></tr>`;
+        } finally {
+          inflight = false;
         }
+      }
 
-        // SAVE IP/MASK
-        if(btn.dataset.act === 'save-addr'){
-          const ip   = row.querySelector('input[data-k="ip"]').value.trim();
-          const mask = row.querySelector('input[data-k="mask"]').value.trim();
-          try { 
-            await window.api.setIfaceAddress(guid, { ip, mask }); 
-            btn.textContent='Saved'; 
-          }
-          catch { 
-            btn.textContent='Err'; 
-          }
-          setTimeout(()=>btn.textContent='Save IP/Mask', 1200);
-        }
+      function startAutoRefresh(sec = 5) {
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(
+          loadPorts,
+          Math.max(1, Number(sec) || 5) * 1000,
+        );
+      }
 
-        // SEND ARP
-        if(btn.dataset.act === 'arp'){
-          const target = row.querySelector('input[data-act="target"]').value.trim();
-          const src    = row.querySelector('input[data-act="src"]').value.trim() || null;
-          try { 
-            await window.api.sendArp(guid, target, src); 
-            btn.textContent='Sent'; 
-          }
-          catch { 
-            btn.textContent='Err'; 
-          }
-          setTimeout(()=>btn.textContent='Send ARP', 1200);
-        }
-
-        // 🔥 PROXY ARP TOGGLE
-        if(btn.dataset.act === 'proxy'){
-          const cur = btn.dataset.state === 'on';
-          const next = !cur;
-          btn.disabled = true;
-          try {
-            await window.api.setProxyArp(guid, next);
-            btn.dataset.state = next ? 'on' : 'off';
-            btn.textContent = next ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
-          } catch {
-            // можно мигнуть ошибку
-            btn.textContent = 'Err';
-            setTimeout(()=>{
-              btn.textContent = cur ? 'Proxy ARP: ON' : 'Proxy ARP: OFF';
-            }, 1200);
-          } finally {
-            btn.disabled = false;
-          }
-        }
-
-        // 🔥 RIP TOGGLE
-        if(btn.dataset.act === 'rip'){
-          const cur = btn.dataset.state === 'on';
-          const next = !cur;
-          btn.disabled = true;
-          try {
-            if (next) {
-              await window.api.ripEnable(guid);
-            } else {
-              await window.api.ripDisable(guid);
-            }
-            btn.dataset.state = next ? 'on' : 'off';
-            btn.textContent = next ? 'RIP: ON' : 'RIP: OFF';
-          } catch {
-            btn.textContent = 'Err';
-            setTimeout(()=>{
-              btn.textContent = cur ? 'RIP: ON' : 'RIP: OFF';
-            }, 1200);
-          } finally {
-            btn.disabled = false;
-          }
-        }
+      await loadPorts();
+      startAutoRefresh(5);
+      window.addEventListener("focus", () => {
+        loadPorts().catch(() => {});
       });
-    }
-  }catch(e){
-    console.error('[ports] getInterfaces/proxy/rip error:', e);
-    tb.innerHTML = `<tr><td colspan="8" class="small">Ошибка загрузки. См. Console.</td></tr>`;
-  } finally {
-    inflight = false;
-  }
-}
-
-function startAutoRefresh(sec=5){
-  if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(loadPorts, Math.max(1, Number(sec)||5) * 1000);
-}
-
-await loadPorts();
-startAutoRefresh(5);
-window.addEventListener('focus', ()=>{ loadPorts().catch(()=>{}); });
-</script>
-
-
-</body>
+    </script>
+  </body>
 </html>

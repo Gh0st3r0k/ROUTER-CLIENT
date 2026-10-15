@@ -1,11 +1,12 @@
 {
   "name": "router-client",
   "version": "1.0.0",
-  "description": "Semestralny project",
+  "description": "Electron management client for the WANT IPv4 software router",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "test": "node --test",
+    "start": "electron .",
+    "test:smoke": "node scripts/smoke.mjs"
   },
   "repository": {
     "type": "git",
