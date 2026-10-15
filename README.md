@@ -7,9 +7,9 @@
 </p>
 
 <p align="center">
-  <a href="#installation-and-startup">Getting started</a> ·
-  <a href="#overview">Using the app</a> ·
-  <a href="docs/development.md">Development</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#using-the-app">Using the app</a> ·
+  <a href="#development">Development</a> ·
   <a href="https://github.com/Gh0st3r0k/Router-Server">Backend server</a>
 </p>
 
@@ -25,6 +25,8 @@
 ## Overview
 
 This is the desktop companion to [WANT Router Server](https://github.com/Gh0st3r0k/Router-Server). It uses **Electron** with plain HTML, CSS, and JavaScript; there is no frontend build step. Renderer pages access the server through an isolated preload API.
+
+## Using the app
 
 | Window | Implemented controls |
 | --- | --- |
@@ -55,7 +57,9 @@ Every window uses `contextIsolation: true` and `nodeIntegration: false`. The pre
 
 See [client and API design](docs/development.md) for component contracts, duration units, and test boundaries. The authoritative [REST reference](https://github.com/Gh0st3r0k/Router-Server/blob/main/docs/api.md) and [network behavior](https://github.com/Gh0st3r0k/Router-Server/blob/main/docs/networking.md) live with the server.
 
-## Requirements
+## Getting started
+
+### Requirements
 
 - **Node.js 22+** and npm for development and the built-in Node test runner. Electron is installed from `package-lock.json` (Electron 38).
 - A graphical Windows, Linux, or macOS desktop for the normal Electron UI; a virtual X display is sufficient for Linux smoke tests.
@@ -63,7 +67,7 @@ See [client and API design](docs/development.md) for component contracts, durati
 - Windows, Npcap, and suitable physical Ethernet adapters on the server host for actual network routing. Linux can run the server API/UI and hardware-independent tests, but its adapter discovery is intentionally disabled.
 - Network access to the npm registry and Electron's GitHub release downloads during installation. No client API keys or database are required.
 
-## Installation and startup
+### Installation and startup
 
 ```sh
 git clone https://github.com/Gh0st3r0k/ROUTER-CLIENT.git
@@ -85,7 +89,7 @@ npm start
 
 Start with **Ports** to configure the server's interface model, then add connected/static routes from the main window. Use RIP and DHCP only on the intended lab networks. Interface address edits do not change the host OS network configuration.
 
-## Testing
+## Development
 
 ### Unit and contract tests
 
@@ -121,7 +125,7 @@ ROUTER_ELECTRON_NO_SANDBOX=1 xvfb-run -a npm run test:smoke
 
 This opt-in disables the Chromium sandbox for the test process. Normal desktop startup uses the default sandbox configuration. Do not expose the debugging port or use untrusted remote renderer content.
 
-## Project layout
+### Project layout
 
 ```text
 main.js                  Electron lifecycle and open-window IPC
